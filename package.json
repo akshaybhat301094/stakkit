@@ -1,0 +1,50 @@
+{
+  "name": "stakkit",
+  "version": "1.0.0",
+  "description": "A universal content organizer for the mobile-first generation",
+  "main": "node_modules/expo/AppEntry.js",
+  "scripts": {
+    "start": "expo start",
+    "android": "expo start --android",
+    "ios": "expo start --ios",
+    "web": "expo start --web",
+    "build": "expo build",
+    "build:android": "expo build:android",
+    "build:ios": "expo build:ios",
+    "lint": "eslint . --ext .ts,.tsx",
+    "lint:fix": "eslint . --ext .ts,.tsx --fix",
+    "format": "prettier --write .",
+    "type-check": "tsc --noEmit",
+    "test": "jest"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/akshaybhat301094/stakkit.git"
+  },
+  "keywords": [
+    "react-native",
+    "expo",
+    "mobile",
+    "bookmarks",
+    "content-organizer",
+    "notes"
+  ],
+  "author": "Stakkit Team",
+  "license": "PRIVATE",
+  "bugs": {
+    "url": "https://github.com/akshaybhat301094/stakkit/issues"
+  },
+  "homepage": "https://github.com/akshaybhat301094/stakkit#readme",
+  "dependencies": {
+    "expo": "~53.0.17",
+    "expo-status-bar": "~2.2.3",
+    "react": "19.0.0",
+    "react-native": "0.79.5"
+  },
+  "devDependencies": {
+    "@babel/core": "^7.25.2",
+    "@types/react": "~19.0.10",
+    "typescript": "~5.8.3"
+  },
+  "private": true
+}
