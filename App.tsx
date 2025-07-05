@@ -1,33 +1,18 @@
+import React from 'react';
 import { StatusBar } from 'expo-status-bar';
-import { StyleSheet, Text, View } from 'react-native';
+import { Provider } from 'react-redux';
 import { registerRootComponent } from 'expo';
+import { store } from './src/store';
+import AppNavigator from './src/navigation/AppNavigator';
+import 'react-native-url-polyfill/auto';
 
 export default function App() {
   return (
-    <View style={styles.container}>
-      <Text style={styles.title}>Welcome to Stakkit</Text>
-      <Text style={styles.subtitle}>Hello World! App is working!</Text>
+    <Provider store={store}>
+      <AppNavigator />
       <StatusBar style="auto" />
-    </View>
+    </Provider>
   );
 }
 
-registerRootComponent(App);
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#fff',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  title: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    marginBottom: 10,
-  },
-  subtitle: {
-    fontSize: 16,
-    color: '#666',
-  },
-}); 
+registerRootComponent(App); 

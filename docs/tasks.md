@@ -3,40 +3,40 @@
 ## 🎯 MVP Development Roadmap (8-10 weeks)
 
 ### Phase 1: Project Setup & Foundation (Week 1)
-- [ ] **Project Initialization**
-  - [ ] Set up React Native project with Expo
-  - [ ] Configure TypeScript
-  - [ ] Set up ESLint and Prettier
-  - [ ] Initialize Git repository with proper .gitignore
-  - [ ] Set up development environment
+- [x] **Project Initialization**
+  - [x] Set up React Native project with Expo
+  - [x] Configure TypeScript
+  - [x] Set up ESLint and Prettier
+  - [x] Initialize Git repository with proper .gitignore
+  - [x] Set up development environment
 
-- [ ] **Backend Setup**
-  - [ ] Create Supabase project
-  - [ ] Set up database schema
-  - [ ] Configure Supabase Auth
-  - [ ] Set up environment variables
-  - [ ] Create basic API structure
+- [x] **Backend Setup**
+  - [x] Create Supabase project
+  - [x] Set up database schema
+  - [x] Configure Supabase Auth
+  - [x] Set up environment variables
+  - [x] Create basic API structure
 
-- [ ] **Database Schema Design**
-  - [ ] Create `users` table
-  - [ ] Create `collections` table
-  - [ ] Create `links` table
-  - [ ] Create `collection_links` junction table
-  - [ ] Set up Row Level Security (RLS) policies
+- [x] **Database Schema Design**
+  - [x] Create `users` table
+  - [x] Create `collections` table
+  - [x] Create `links` table
+  - [x] Create `collection_links` junction table
+  - [x] Set up Row Level Security (RLS) policies
 
 ### Phase 2: Authentication & User Management (Week 2)
-- [ ] **User Authentication**
-  - [ ] Implement email/password authentication
-  - [ ] Add social login options (Google, Apple)
-  - [ ] Create login/signup screens
-  - [ ] Implement auth state management
-  - [ ] Add logout functionality
-  - [ ] Handle auth errors and edge cases
+- [x] **User Authentication**
+  - [x] Implement email/password authentication
+  - [x] Add social login options (Google)
+  - [x] Create login/signup screens
+  - [x] Implement auth state management
+  - [x] Add logout functionality
+  - [x] Handle auth errors and edge cases
 
-- [ ] **User Profile**
-  - [ ] Create user profile screen
+- [x] **User Profile**
+  - [x] Create user profile screen
   - [ ] Implement profile editing
-  - [ ] Add user settings
+  - [x] Add user settings
 
 ### Phase 3: Core Link Saving Functionality (Week 3-4)
 - [ ] **Link Preview System**
