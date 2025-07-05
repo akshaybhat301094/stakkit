@@ -82,9 +82,46 @@ const LoginScreen: React.FC = () => {
 
   const handleGoogleSignIn = async () => {
     try {
-      await signInWithGoogle().unwrap();
+      console.log('Starting Google OAuth flow...');
+      
+      // Debug: Show the redirect URI that will be used
+      const redirectUri = Platform.OS === 'web' 
+        ? `${window.location.origin}/auth/callback`
+        : 'stakkit://auth/callback';
+      
+      console.log('🔗 Redirect URI that will be used:', redirectUri);
+      Alert.alert(
+        'OAuth Debug Info',
+        `Platform: ${Platform.OS}\n\nRedirect URI:\n${redirectUri}\n\nMake sure this URI is added to your Google OAuth console!`,
+        [
+          { text: 'Cancel', style: 'cancel' },
+          { text: 'Continue', onPress: async () => {
+            try {
+              const result = await signInWithGoogle().unwrap();
+              console.log('Google OAuth completed:', result);
+            } catch (error: any) {
+              console.error('Google OAuth error:', error);
+              
+              let errorMessage = 'Failed to sign in with Google';
+              
+              if (error.message?.includes('cancelled')) {
+                errorMessage = 'Google sign-in was cancelled. Please try again.';
+              } else if (error.message?.includes('network')) {
+                errorMessage = 'Network error. Please check your connection and try again.';
+              } else if (error.message?.includes('redirect_uri_mismatch')) {
+                errorMessage = 'OAuth configuration error. Please check your Google OAuth console settings.';
+              } else if (error.message) {
+                errorMessage = error.message;
+              }
+              
+              Alert.alert('Sign-in Error', errorMessage);
+            }
+          }}
+        ]
+      );
     } catch (error: any) {
-      Alert.alert('Error', error.message || 'Failed to sign in with Google');
+      console.error('Google OAuth error:', error);
+      Alert.alert('Sign-in Error', 'Failed to initialize Google sign-in');
     }
   };
 

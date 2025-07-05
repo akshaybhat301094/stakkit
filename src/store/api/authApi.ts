@@ -4,8 +4,9 @@ import { User } from '@supabase/supabase-js';
 import * as AuthSession from 'expo-auth-session';
 import * as WebBrowser from 'expo-web-browser';
 import { makeRedirectUri } from 'expo-auth-session';
+import { Platform } from 'react-native';
 
-// Configure web browser for Google OAuth
+// Configure web browser for OAuth
 WebBrowser.maybeCompleteAuthSession();
 
 export interface AuthResponse {
@@ -70,10 +71,22 @@ export const authApi = createApi({
     signInWithGoogle: builder.mutation<AuthResponse, void>({
       queryFn: async () => {
         try {
-          const redirectTo = makeRedirectUri({
-            scheme: 'stakkit',
-            preferLocalhost: true,
-          });
+          // Create platform-specific redirect URI
+          let redirectTo: string;
+          
+          if (Platform.OS === 'web') {
+            // For web, use the current origin + auth callback path
+            redirectTo = `${window.location.origin}/auth/callback`;
+          } else {
+            // For mobile, use the custom scheme
+            redirectTo = makeRedirectUri({
+              scheme: 'stakkit',
+              path: 'auth/callback',
+            });
+          }
+
+          console.log('Platform:', Platform.OS);
+          console.log('OAuth redirect URI:', redirectTo);
 
           const { data, error } = await supabase.auth.signInWithOAuth({
             provider: 'google',
@@ -87,26 +100,46 @@ export const authApi = createApi({
           });
 
           if (error) {
+            console.error('Supabase OAuth error:', error);
             return { error: { status: 'CUSTOM_ERROR', error: error.message } };
           }
 
-          // For web/mobile, we need to handle the redirect flow
           if (data.url) {
-            const result = await WebBrowser.openAuthSessionAsync(
-              data.url,
-              redirectTo
-            );
-
-            if (result.type === 'success') {
-              // The callback will be handled by the auth state listener
+            console.log('Opening OAuth URL:', data.url);
+            
+            if (Platform.OS === 'web') {
+              // For web, redirect to the OAuth URL
+              window.location.href = data.url;
               return { data: { user: null } };
             } else {
-              return { error: { status: 'CUSTOM_ERROR', error: 'Google sign-in was cancelled' } };
+              // For mobile, open the OAuth URL in the system browser
+              const result = await WebBrowser.openAuthSessionAsync(
+                data.url,
+                redirectTo,
+                {
+                  showInRecents: true,
+                  preferEphemeralSession: true,
+                }
+              );
+
+              console.log('OAuth result:', result);
+
+              if (result.type === 'success' && result.url) {
+                // The URL will contain the auth tokens, but Supabase will handle this automatically
+                // via the auth state listener in AppNavigator
+                console.log('OAuth success, waiting for auth state change');
+                return { data: { user: null } };
+              } else if (result.type === 'cancel') {
+                return { error: { status: 'CUSTOM_ERROR', error: 'Google sign-in was cancelled' } };
+              } else {
+                return { error: { status: 'CUSTOM_ERROR', error: 'Google sign-in failed' } };
+              }
             }
           }
 
-          return { data: { user: null } };
+          return { error: { status: 'CUSTOM_ERROR', error: 'No OAuth URL received' } };
         } catch (error) {
+          console.error('Google OAuth error:', error);
           return { error: { status: 'CUSTOM_ERROR', error: 'Failed to sign in with Google' } };
         }
       },
