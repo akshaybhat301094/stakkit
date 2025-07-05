@@ -71,76 +71,97 @@ export const authApi = createApi({
     signInWithGoogle: builder.mutation<AuthResponse, void>({
       queryFn: async () => {
         try {
-          // Create platform-specific redirect URI
-          let redirectTo: string;
-          
+          // For mobile, we need to handle OAuth differently
           if (Platform.OS === 'web') {
-            // For web, use the current origin + auth callback path
-            redirectTo = `${window.location.origin}/auth/callback`;
+            // Web OAuth flow
+            const { data, error } = await supabase.auth.signInWithOAuth({
+              provider: 'google',
+              options: {
+                redirectTo: `${window.location.origin}/auth/callback`,
+                queryParams: {
+                  access_type: 'offline',
+                  prompt: 'consent',
+                },
+              },
+            });
+
+            if (error) {
+              console.error('Supabase OAuth error:', error);
+              return { error: { status: 'CUSTOM_ERROR', error: error.message } };
+            }
+
+            return { data: { user: null } };
           } else {
-            // For mobile, use the custom scheme
-            redirectTo = makeRedirectUri({
+            // Mobile OAuth flow using AuthSession
+            const redirectUri = makeRedirectUri({
               scheme: 'stakkit',
               path: 'auth/callback',
             });
-          }
 
-          console.log('Platform:', Platform.OS);
-          console.log('OAuth redirect URI:', redirectTo);
+            console.log('OAuth redirect URI:', redirectUri);
 
-          const { data, error } = await supabase.auth.signInWithOAuth({
-            provider: 'google',
-            options: {
-              redirectTo,
-              queryParams: {
-                access_type: 'offline',
-                prompt: 'consent',
+            // Get the OAuth URL from Supabase
+            const { data, error } = await supabase.auth.signInWithOAuth({
+              provider: 'google',
+              options: {
+                redirectTo: redirectUri,
+                queryParams: {
+                  access_type: 'offline',
+                  prompt: 'consent',
+                },
               },
-            },
-          });
+            });
 
-          if (error) {
-            console.error('Supabase OAuth error:', error);
-            return { error: { status: 'CUSTOM_ERROR', error: error.message } };
-          }
+            if (error) {
+              console.error('Supabase OAuth error:', error);
+              return { error: { status: 'CUSTOM_ERROR', error: error.message } };
+            }
 
-          if (data.url) {
-            console.log('Opening OAuth URL:', data.url);
-            
-            if (Platform.OS === 'web') {
-              // For web, redirect to the OAuth URL
-              window.location.href = data.url;
-              return { data: { user: null } };
-            } else {
-              // For mobile, open the OAuth URL in the system browser
-              const result = await WebBrowser.openAuthSessionAsync(
-                data.url,
-                redirectTo,
-                {
-                  showInRecents: true,
-                  preferEphemeralSession: true,
-                }
-              );
+            if (!data?.url) {
+              return { error: { status: 'CUSTOM_ERROR', error: 'No OAuth URL received' } };
+            }
 
-              console.log('OAuth result:', result);
-
-              if (result.type === 'success' && result.url) {
-                // The URL will contain the auth tokens, but Supabase will handle this automatically
-                // via the auth state listener in AppNavigator
-                console.log('OAuth success, waiting for auth state change');
-                return { data: { user: null } };
-              } else if (result.type === 'cancel') {
-                return { error: { status: 'CUSTOM_ERROR', error: 'Google sign-in was cancelled' } };
-              } else {
-                return { error: { status: 'CUSTOM_ERROR', error: 'Google sign-in failed' } };
+            // Open the OAuth URL in the browser
+            const result = await WebBrowser.openAuthSessionAsync(
+              data.url,
+              redirectUri,
+              {
+                showInRecents: true,
               }
+            );
+
+            console.log('OAuth result:', result);
+
+            if (result.type === 'success') {
+              // Extract tokens from the result URL
+              const { url } = result;
+              
+              // Parse the URL to extract the tokens
+              const urlParams = new URL(url);
+              const accessToken = urlParams.searchParams.get('access_token');
+              const refreshToken = urlParams.searchParams.get('refresh_token');
+              
+              if (accessToken) {
+                // Set the session with the tokens
+                await supabase.auth.setSession({
+                  access_token: accessToken,
+                  refresh_token: refreshToken || '',
+                });
+
+                // Don't return user data here - let the auth state listener handle it
+                return { data: { user: null } };
+              } else {
+                return { error: { status: 'CUSTOM_ERROR', error: 'No access token received' } };
+              }
+            } else if (result.type === 'cancel') {
+              return { error: { status: 'CUSTOM_ERROR', error: 'OAuth cancelled by user' } };
+            } else {
+              return { error: { status: 'CUSTOM_ERROR', error: 'OAuth failed' } };
             }
           }
-
-          return { error: { status: 'CUSTOM_ERROR', error: 'No OAuth URL received' } };
-        } catch (error) {
-          console.error('Google OAuth error:', error);
-          return { error: { status: 'CUSTOM_ERROR', error: 'Failed to sign in with Google' } };
+        } catch (error: any) {
+          console.error('OAuth error:', error);
+          return { error: { status: 'CUSTOM_ERROR', error: error.message || 'OAuth failed' } };
         }
       },
       invalidatesTags: ['User'],
@@ -149,14 +170,14 @@ export const authApi = createApi({
       queryFn: async () => {
         try {
           const { error } = await supabase.auth.signOut();
-
+          
           if (error) {
             return { error: { status: 'CUSTOM_ERROR', error: error.message } };
           }
-
+          
           return { data: undefined };
-        } catch (error) {
-          return { error: { status: 'CUSTOM_ERROR', error: 'Failed to sign out' } };
+        } catch (error: any) {
+          return { error: { status: 'CUSTOM_ERROR', error: error.message || 'Failed to sign out' } };
         }
       },
       invalidatesTags: ['User'],

@@ -16,8 +16,6 @@ import { RouteProp } from '@react-navigation/native';
 import { StackNavigationProp } from '@react-navigation/stack';
 import { AuthStackParamList } from '../../navigation/AuthNavigator';
 import { useVerifyOtpMutation, useSignInWithOtpMutation } from '../../store/api/authApi';
-import { useAppDispatch } from '../../store/hooks';
-import { setUser } from '../../store/slices/authSlice';
 
 type OtpScreenRouteProp = RouteProp<AuthStackParamList, 'Otp'>;
 type OtpScreenNavigationProp = StackNavigationProp<AuthStackParamList, 'Otp'>;
@@ -25,7 +23,6 @@ type OtpScreenNavigationProp = StackNavigationProp<AuthStackParamList, 'Otp'>;
 const OtpScreen: React.FC = () => {
   const route = useRoute<OtpScreenRouteProp>();
   const navigation = useNavigation<OtpScreenNavigationProp>();
-  const dispatch = useAppDispatch();
   const { phone } = route.params;
   
   const [otp, setOtp] = useState(['', '', '', '', '', '']);
@@ -89,10 +86,9 @@ const OtpScreen: React.FC = () => {
     }
 
     try {
-      const result = await verifyOtp({ phone, token: code }).unwrap();
-      if (result.user) {
-        dispatch(setUser(result.user));
-      }
+      await verifyOtp({ phone, token: code }).unwrap();
+      // Don't manually set user here - let the auth state listener handle it
+      // The auth state listener in AppNavigator will automatically update the user state
     } catch (error: any) {
       Alert.alert('Error', error.message || 'Invalid verification code');
       // Clear OTP on error

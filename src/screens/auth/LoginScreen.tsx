@@ -84,44 +84,27 @@ const LoginScreen: React.FC = () => {
     try {
       console.log('Starting Google OAuth flow...');
       
-      // Debug: Show the redirect URI that will be used
-      const redirectUri = Platform.OS === 'web' 
-        ? `${window.location.origin}/auth/callback`
-        : 'stakkit://auth/callback';
+      await signInWithGoogle().unwrap();
+      console.log('Google OAuth flow initiated');
       
-      console.log('🔗 Redirect URI that will be used:', redirectUri);
-      Alert.alert(
-        'OAuth Debug Info',
-        `Platform: ${Platform.OS}\n\nRedirect URI:\n${redirectUri}\n\nMake sure this URI is added to your Google OAuth console!`,
-        [
-          { text: 'Cancel', style: 'cancel' },
-          { text: 'Continue', onPress: async () => {
-            try {
-              const result = await signInWithGoogle().unwrap();
-              console.log('Google OAuth completed:', result);
-            } catch (error: any) {
-              console.error('Google OAuth error:', error);
-              
-              let errorMessage = 'Failed to sign in with Google';
-              
-              if (error.message?.includes('cancelled')) {
-                errorMessage = 'Google sign-in was cancelled. Please try again.';
-              } else if (error.message?.includes('network')) {
-                errorMessage = 'Network error. Please check your connection and try again.';
-              } else if (error.message?.includes('redirect_uri_mismatch')) {
-                errorMessage = 'OAuth configuration error. Please check your Google OAuth console settings.';
-              } else if (error.message) {
-                errorMessage = error.message;
-              }
-              
-              Alert.alert('Sign-in Error', errorMessage);
-            }
-          }}
-        ]
-      );
+      // The auth state listener will handle the user sign-in
+      // No need to manually check for user here
     } catch (error: any) {
       console.error('Google OAuth error:', error);
-      Alert.alert('Sign-in Error', 'Failed to initialize Google sign-in');
+      
+      let errorMessage = 'Failed to sign in with Google';
+      
+      if (error.message?.includes('cancelled') || error.message?.includes('OAuth cancelled')) {
+        errorMessage = 'Google sign-in was cancelled. Please try again.';
+      } else if (error.message?.includes('network')) {
+        errorMessage = 'Network error. Please check your connection and try again.';
+      } else if (error.message?.includes('redirect_uri_mismatch')) {
+        errorMessage = 'OAuth configuration error. Please check your Google OAuth console settings.';
+      } else if (error.message) {
+        errorMessage = error.message;
+      }
+      
+      Alert.alert('Sign In Error', errorMessage);
     }
   };
 
