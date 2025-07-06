@@ -1,0 +1,13 @@
+sequenceDiagram
+    participant User as "User (App)"
+    participant Supabase as "Supabase Auth"
+    participant Backend as "Your Python Backend"
+    participant SupabaseDB as "Supabase DB"
+
+    User->>Supabase: Login (email/password/OTP)
+    Supabase-->>User: Returns JWT (access token)
+    User->>Backend: API Request with JWT (Authorization: Bearer <token>)
+    Backend->>Backend: Verify JWT (using Supabase JWKS)
+    Backend->>SupabaseDB: Query data (using user_id from JWT)
+    SupabaseDB-->>Backend: Returns user data
+    Backend-->>User: Returns API response/data 
