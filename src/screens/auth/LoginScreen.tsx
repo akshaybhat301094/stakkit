@@ -14,97 +14,68 @@ import {
 import { useNavigation } from '@react-navigation/native';
 import { StackNavigationProp } from '@react-navigation/stack';
 import { AuthStackParamList } from '../../navigation/AuthNavigator';
-import { useSignInWithOtpMutation, useSignInWithGoogleMutation } from '../../store/api/authApi';
+import { useSignInWithOtpMutation, useSignInAsGuestMutation } from '../../store/api/authApi';
+import { useDispatch } from 'react-redux';
+import { setUser } from '../../store/slices/authSlice';
 
 type LoginScreenNavigationProp = StackNavigationProp<AuthStackParamList, 'Login'>;
 
 const LoginScreen: React.FC = () => {
   const navigation = useNavigation<LoginScreenNavigationProp>();
-  const [phone, setPhone] = useState('');
+  const dispatch = useDispatch();
+  const [email, setEmail] = useState('');
   const [signInWithOtp, { isLoading: isOtpLoading }] = useSignInWithOtpMutation();
-  const [signInWithGoogle, { isLoading: isGoogleLoading }] = useSignInWithGoogleMutation();
+  const [signInAsGuest, { isLoading: isGuestLoading }] = useSignInAsGuestMutation();
 
-  const formatPhoneNumber = (value: string) => {
-    // Remove all non-digit characters
-    const digits = value.replace(/\D/g, '');
-    
-    // Format as +1 (XXX) XXX-XXXX for US numbers
-    if (digits.length <= 10) {
-      if (digits.length >= 6) {
-        return `+1 (${digits.slice(0, 3)}) ${digits.slice(3, 6)}-${digits.slice(6)}`;
-      } else if (digits.length >= 3) {
-        return `+1 (${digits.slice(0, 3)}) ${digits.slice(3)}`;
-      } else if (digits.length > 0) {
-        return `+1 (${digits}`;
-      }
-    }
-    return digits.length > 0 ? `+1 ${digits}` : '';
+  const validateEmail = (email: string) => {
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    return emailRegex.test(email);
   };
 
-  const validatePhoneNumber = (phone: string) => {
-    // Extract digits only
-    const digits = phone.replace(/\D/g, '');
-    // Check if it's a valid US phone number (10 digits)
-    return digits.length === 10 || digits.length === 11;
+  const handleEmailChange = (value: string) => {
+    setEmail(value.trim());
   };
 
-  const getCleanPhoneNumber = (phone: string) => {
-    const digits = phone.replace(/\D/g, '');
-    // Return with country code +1
-    return digits.length === 10 ? `+1${digits}` : `+${digits}`;
-  };
-
-  const handlePhoneChange = (value: string) => {
-    // Allow only digits, spaces, parentheses, hyphens, and plus
-    const cleanValue = value.replace(/[^0-9\s\(\)\-\+]/g, '');
-    setPhone(cleanValue);
-  };
-
-  const handlePhoneSignIn = async () => {
-    if (!phone.trim()) {
-      Alert.alert('Error', 'Please enter your phone number');
+  const handleEmailSignIn = async () => {
+    if (!email.trim()) {
+      Alert.alert('Error', 'Please enter your email address');
       return;
     }
 
-    if (!validatePhoneNumber(phone)) {
-      Alert.alert('Error', 'Please enter a valid phone number');
+    if (!validateEmail(email)) {
+      Alert.alert('Error', 'Please enter a valid email address');
       return;
     }
 
     try {
-      const cleanPhone = getCleanPhoneNumber(phone);
-      await signInWithOtp({ phone: cleanPhone }).unwrap();
-      navigation.navigate('Otp', { phone: cleanPhone });
+      await signInWithOtp({ email }).unwrap();
+      navigation.navigate('Otp', { email });
     } catch (error: any) {
-      Alert.alert('Error', error.message || 'Failed to send OTP');
+      Alert.alert('Error', error.message || 'Failed to send verification code');
     }
   };
 
-  const handleGoogleSignIn = async () => {
+  const handleGuestSignIn = async () => {
     try {
-      console.log('Starting Google OAuth flow...');
+      // For development: Create a mock user and set it directly
+      const mockUser = {
+        id: 'guest-user-' + Date.now(),
+        email: 'guest@stakkit.dev',
+        user_metadata: {
+          name: 'Guest User',
+        },
+        app_metadata: {},
+        aud: 'authenticated',
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+      };
+
+      // Set the mock user in the auth state
+      dispatch(setUser(mockUser as any));
       
-      await signInWithGoogle().unwrap();
-      console.log('Google OAuth flow initiated');
-      
-      // The auth state listener will handle the user sign-in
-      // No need to manually check for user here
+      // The auth state listener will handle the navigation automatically
     } catch (error: any) {
-      console.error('Google OAuth error:', error);
-      
-      let errorMessage = 'Failed to sign in with Google';
-      
-      if (error.message?.includes('cancelled') || error.message?.includes('OAuth cancelled')) {
-        errorMessage = 'Google sign-in was cancelled. Please try again.';
-      } else if (error.message?.includes('network')) {
-        errorMessage = 'Network error. Please check your connection and try again.';
-      } else if (error.message?.includes('redirect_uri_mismatch')) {
-        errorMessage = 'OAuth configuration error. Please check your Google OAuth console settings.';
-      } else if (error.message) {
-        errorMessage = error.message;
-      }
-      
-      Alert.alert('Sign In Error', errorMessage);
+      Alert.alert('Error', error.message || 'Failed to sign in as guest');
     }
   };
 
@@ -123,24 +94,25 @@ const LoginScreen: React.FC = () => {
           </View>
 
           <View style={styles.form}>
-            <Text style={styles.label}>Phone Number</Text>
+            <Text style={styles.label}>Email Address</Text>
             <TextInput
               style={styles.input}
-              placeholder="Enter your phone number"
+              placeholder="Enter your email address"
               placeholderTextColor="#8E8E93"
-              value={phone}
-              onChangeText={handlePhoneChange}
-              keyboardType="phone-pad"
-              autoComplete="tel"
-              textContentType="telephoneNumber"
+              value={email}
+              onChangeText={handleEmailChange}
+              keyboardType="email-address"
+              autoComplete="email"
+              textContentType="emailAddress"
+              autoCapitalize="none"
             />
             <Text style={styles.helperText}>
-              We'll send you a verification code via SMS
+              We'll send you a verification code via email
             </Text>
 
             <TouchableOpacity
               style={[styles.button, styles.primaryButton]}
-              onPress={handlePhoneSignIn}
+              onPress={handleEmailSignIn}
               disabled={isOtpLoading}
             >
               {isOtpLoading ? (
@@ -157,16 +129,20 @@ const LoginScreen: React.FC = () => {
             </View>
 
             <TouchableOpacity
-              style={[styles.button, styles.secondaryButton]}
-              onPress={handleGoogleSignIn}
-              disabled={isGoogleLoading}
+              style={[styles.button, styles.guestButton]}
+              onPress={handleGuestSignIn}
+              disabled={isGuestLoading}
             >
-              {isGoogleLoading ? (
-                <ActivityIndicator color="#000000" />
+              {isGuestLoading ? (
+                <ActivityIndicator color="#8E8E93" />
               ) : (
-                <Text style={styles.secondaryButtonText}>Continue with Google</Text>
+                <Text style={styles.guestButtonText}>Continue as Guest</Text>
               )}
             </TouchableOpacity>
+
+            <Text style={styles.developmentNote}>
+              Development Mode: Guest access will be removed in production
+            </Text>
           </View>
 
           <View style={styles.footer}>
@@ -200,87 +176,97 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 32,
     fontWeight: 'bold',
-    color: '#1C1C1E',
+    color: '#1D1D1F',
     marginBottom: 8,
+    textAlign: 'center',
   },
   subtitle: {
-    fontSize: 16,
+    fontSize: 17,
     color: '#8E8E93',
     textAlign: 'center',
-    lineHeight: 22,
+    lineHeight: 24,
   },
   form: {
     marginBottom: 48,
   },
   label: {
-    fontSize: 16,
+    fontSize: 17,
     fontWeight: '600',
-    color: '#1C1C1E',
+    color: '#1D1D1F',
     marginBottom: 8,
   },
   input: {
-    height: 52,
+    height: 50,
     borderWidth: 1,
-    borderColor: '#E5E5EA',
+    borderColor: '#E5E5E7',
     borderRadius: 12,
     paddingHorizontal: 16,
-    fontSize: 16,
-    backgroundColor: '#F9F9FB',
-    marginBottom: 8,
+    fontSize: 17,
+    backgroundColor: '#F2F2F7',
+    color: '#1D1D1F',
   },
   helperText: {
-    fontSize: 14,
+    fontSize: 13,
     color: '#8E8E93',
+    marginTop: 8,
     marginBottom: 24,
   },
   button: {
-    height: 52,
+    height: 50,
     borderRadius: 12,
-    justifyContent: 'center',
     alignItems: 'center',
+    justifyContent: 'center',
     marginBottom: 16,
   },
   primaryButton: {
     backgroundColor: '#007AFF',
   },
   primaryButtonText: {
+    fontSize: 17,
+    fontWeight: '600',
     color: '#FFFFFF',
-    fontSize: 16,
-    fontWeight: '600',
-  },
-  secondaryButton: {
-    backgroundColor: '#F9F9FB',
-    borderWidth: 1,
-    borderColor: '#E5E5EA',
-  },
-  secondaryButtonText: {
-    color: '#1C1C1E',
-    fontSize: 16,
-    fontWeight: '600',
   },
   divider: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 24,
+    marginVertical: 16,
   },
   dividerLine: {
     flex: 1,
     height: 1,
-    backgroundColor: '#E5E5EA',
+    backgroundColor: '#E5E5E7',
   },
   dividerText: {
-    marginHorizontal: 16,
-    fontSize: 14,
+    fontSize: 15,
     color: '#8E8E93',
+    marginHorizontal: 16,
+  },
+  guestButton: {
+    backgroundColor: '#F2F2F7',
+    borderWidth: 1,
+    borderColor: '#E5E5E7',
+    marginBottom: 8,
+  },
+  guestButtonText: {
+    fontSize: 17,
+    fontWeight: '600',
+    color: '#8E8E93',
+  },
+  developmentNote: {
+    fontSize: 12,
+    color: '#FF9500',
+    textAlign: 'center',
+    fontStyle: 'italic',
+    marginBottom: 16,
   },
   footer: {
     alignItems: 'center',
   },
   footerText: {
-    fontSize: 12,
+    fontSize: 13,
     color: '#8E8E93',
     textAlign: 'center',
-    lineHeight: 16,
+    lineHeight: 18,
   },
 });
 

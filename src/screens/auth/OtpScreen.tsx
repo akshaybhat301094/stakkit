@@ -23,7 +23,7 @@ type OtpScreenNavigationProp = StackNavigationProp<AuthStackParamList, 'Otp'>;
 const OtpScreen: React.FC = () => {
   const route = useRoute<OtpScreenRouteProp>();
   const navigation = useNavigation<OtpScreenNavigationProp>();
-  const { phone } = route.params;
+  const { email } = route.params;
   
   const [otp, setOtp] = useState(['', '', '', '', '', '']);
   const [countdown, setCountdown] = useState(60);
@@ -43,14 +43,12 @@ const OtpScreen: React.FC = () => {
     }
   }, [countdown]);
 
-  const formatPhoneNumber = (phone: string) => {
-    // Remove + and country code for display
-    const digits = phone.replace(/\D/g, '');
-    if (digits.length === 11 && digits.startsWith('1')) {
-      const usDigits = digits.slice(1);
-      return `(${usDigits.slice(0, 3)}) ${usDigits.slice(3, 6)}-${usDigits.slice(6)}`;
+  const maskEmail = (email: string) => {
+    const [localPart, domain] = email.split('@');
+    if (localPart.length <= 2) {
+      return `${localPart[0]}***@${domain}`;
     }
-    return phone;
+    return `${localPart[0]}${localPart[1]}${'*'.repeat(localPart.length - 2)}@${domain}`;
   };
 
   const handleOtpChange = (value: string, index: number) => {
@@ -86,7 +84,7 @@ const OtpScreen: React.FC = () => {
     }
 
     try {
-      await verifyOtp({ phone, token: code }).unwrap();
+      await verifyOtp({ email, token: code }).unwrap();
       // Don't manually set user here - let the auth state listener handle it
       // The auth state listener in AppNavigator will automatically update the user state
     } catch (error: any) {
@@ -99,10 +97,10 @@ const OtpScreen: React.FC = () => {
 
   const handleResendOtp = async () => {
     try {
-      await resendOtp({ phone }).unwrap();
+      await resendOtp({ email }).unwrap();
       setCountdown(60);
       setCanResend(false);
-      Alert.alert('Success', 'A new verification code has been sent to your phone');
+      Alert.alert('Success', 'A new verification code has been sent to your email');
     } catch (error: any) {
       Alert.alert('Error', error.message || 'Failed to resend verification code');
     }
@@ -120,10 +118,10 @@ const OtpScreen: React.FC = () => {
       >
         <View style={styles.content}>
           <View style={styles.header}>
-            <Text style={styles.title}>Verify Your Phone</Text>
+            <Text style={styles.title}>Verify Your Email</Text>
             <Text style={styles.subtitle}>
               We've sent a 6-digit verification code to{'\n'}
-              <Text style={styles.phone}>{formatPhoneNumber(phone)}</Text>
+              <Text style={styles.email}>{maskEmail(email)}</Text>
             </Text>
           </View>
 
@@ -204,18 +202,19 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 32,
     fontWeight: 'bold',
-    color: '#1C1C1E',
+    color: '#1D1D1F',
     marginBottom: 8,
+    textAlign: 'center',
   },
   subtitle: {
-    fontSize: 16,
+    fontSize: 17,
     color: '#8E8E93',
     textAlign: 'center',
-    lineHeight: 22,
+    lineHeight: 24,
   },
-  phone: {
+  email: {
     fontWeight: '600',
-    color: '#1C1C1E',
+    color: '#1D1D1F',
   },
   otpContainer: {
     flexDirection: 'row',
@@ -225,53 +224,53 @@ const styles = StyleSheet.create({
   otpInput: {
     width: 48,
     height: 56,
-    borderWidth: 2,
-    borderColor: '#E5E5EA',
+    borderWidth: 1,
+    borderColor: '#E5E5E7',
     borderRadius: 12,
     fontSize: 24,
     fontWeight: '600',
-    color: '#1C1C1E',
-    backgroundColor: '#F9F9FB',
+    color: '#1D1D1F',
+    backgroundColor: '#F2F2F7',
   },
   otpInputFilled: {
     borderColor: '#007AFF',
-    backgroundColor: '#F0F8FF',
+    backgroundColor: '#ffffff',
   },
   button: {
-    height: 52,
+    height: 50,
     borderRadius: 12,
-    justifyContent: 'center',
     alignItems: 'center',
+    justifyContent: 'center',
     marginBottom: 24,
   },
   primaryButton: {
     backgroundColor: '#007AFF',
   },
   primaryButtonText: {
-    color: '#FFFFFF',
-    fontSize: 16,
+    fontSize: 17,
     fontWeight: '600',
+    color: '#FFFFFF',
   },
   resendContainer: {
     alignItems: 'center',
     marginBottom: 24,
   },
   resendText: {
-    fontSize: 16,
-    color: '#007AFF',
+    fontSize: 17,
     fontWeight: '600',
+    color: '#007AFF',
   },
   countdownText: {
-    fontSize: 16,
+    fontSize: 17,
     color: '#8E8E93',
   },
   backButton: {
     alignItems: 'center',
+    paddingVertical: 12,
   },
   backButtonText: {
-    fontSize: 16,
+    fontSize: 17,
     color: '#8E8E93',
-    fontWeight: '500',
   },
 });
 

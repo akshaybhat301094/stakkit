@@ -5,7 +5,7 @@ import OtpScreen from '../screens/auth/OtpScreen';
 
 export type AuthStackParamList = {
   Login: undefined;
-  Otp: { phone: string };
+  Otp: { email: string };
 };
 
 const Stack = createStackNavigator<AuthStackParamList>();
