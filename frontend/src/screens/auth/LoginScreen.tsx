@@ -16,7 +16,9 @@ import { StackNavigationProp } from '@react-navigation/stack';
 import { AuthStackParamList } from '../../navigation/AuthNavigator';
 import { useSignInWithOtpMutation, useSignInAsGuestMutation } from '../../store/api/authApi';
 import { useDispatch } from 'react-redux';
-import { setUser } from '../../store/slices/authSlice';
+import { setUser, setSession } from '../../store/slices/authSlice';
+import * as WebBrowser from 'expo-web-browser';
+import { supabase } from '../../services/supabase';
 
 type LoginScreenNavigationProp = StackNavigationProp<AuthStackParamList, 'Login'>;
 
@@ -26,6 +28,7 @@ const LoginScreen: React.FC = () => {
   const [email, setEmail] = useState('');
   const [signInWithOtp, { isLoading: isOtpLoading }] = useSignInWithOtpMutation();
   const [signInAsGuest, { isLoading: isGuestLoading }] = useSignInAsGuestMutation();
+  const [isGoogleLoading, setGoogleLoading] = useState(false);
 
   const validateEmail = (email: string) => {
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -57,25 +60,96 @@ const LoginScreen: React.FC = () => {
 
   const handleGuestSignIn = async () => {
     try {
-      // For development: Create a mock user and set it directly
-      const mockUser = {
-        id: 'guest-user-' + Date.now(),
-        email: 'guest@stakkit.dev',
-        user_metadata: {
-          name: 'Guest User',
-        },
-        app_metadata: {},
-        aud: 'authenticated',
-        created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString(),
-      };
+      const result = await signInAsGuest().unwrap();
+      
+      if (result.error) {
+        throw new Error(result.error);
+      }
 
-      // Set the mock user in the auth state
-      dispatch(setUser(mockUser as any));
+      // Set the user and session in the auth state
+      if (result.session) {
+        dispatch(setSession(result.session));
+      }
       
       // The auth state listener will handle the navigation automatically
     } catch (error: any) {
       Alert.alert('Error', error.message || 'Failed to sign in as guest');
+    }
+  };
+
+  const handleGoogleSignIn = async () => {
+    setGoogleLoading(true);
+    try {
+      const redirectTo = Platform.OS === 'web'
+        ? window.location.origin + '/auth/callback'
+        : 'stakkit://auth/callback';
+
+      const { data, error } = await supabase.auth.signInWithOAuth({
+        provider: 'google',
+        options: { 
+          redirectTo,
+          scopes: 'email profile',
+          queryParams: {
+            access_type: 'offline',
+            prompt: 'consent',
+          },
+        },
+      });
+
+      if (error) throw error;
+
+      if (data?.url && Platform.OS !== 'web') {
+        const result = await WebBrowser.openAuthSessionAsync(
+          data.url,
+          redirectTo,
+          {
+            showInRecents: true,
+            dismissButtonStyle: 'done',
+            preferEphemeralSession: true
+          }
+        );
+
+        if (result.type === 'success' && result.url) {
+          const url = new URL(result.url);
+          const fragment = url.hash.substring(1);
+          const params = new URLSearchParams(fragment);
+          
+          const accessToken = params.get('access_token');
+          const refreshToken = params.get('refresh_token');
+          
+          if (accessToken) {
+            const { data: sessionData, error: sessionError } = await supabase.auth.setSession({
+              access_token: accessToken,
+              refresh_token: refreshToken || ''
+            });
+
+            if (sessionError) throw sessionError;
+
+            if (sessionData.session) {
+              dispatch(setSession(sessionData.session));
+              return;
+            }
+          }
+        }
+
+        // Fallback session checks
+        for (let i = 0; i < 3; i++) {
+          const { data: sessionData } = await supabase.auth.getSession();
+
+          if (sessionData?.session) {
+            dispatch(setSession(sessionData.session));
+            break;
+          }
+
+          if (i < 2) {
+            await new Promise(resolve => setTimeout(resolve, 1000));
+          }
+        }
+      }
+    } catch (error: any) {
+      Alert.alert('Google Sign-In Error', error.message || 'Failed to sign in with Google');
+    } finally {
+      setGoogleLoading(false);
     }
   };
 
@@ -127,6 +201,18 @@ const LoginScreen: React.FC = () => {
               <Text style={styles.dividerText}>or</Text>
               <View style={styles.dividerLine} />
             </View>
+
+            <TouchableOpacity
+              style={[styles.button, { backgroundColor: '#4285F4', marginBottom: 8 }]}
+              onPress={handleGoogleSignIn}
+              disabled={isGoogleLoading}
+            >
+              {isGoogleLoading ? (
+                <ActivityIndicator color="#FFFFFF" />
+              ) : (
+                <Text style={{ color: '#FFFFFF', fontWeight: '600', fontSize: 17 }}>Login with Google</Text>
+              )}
+            </TouchableOpacity>
 
             <TouchableOpacity
               style={[styles.button, styles.guestButton]}

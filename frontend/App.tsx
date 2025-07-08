@@ -6,8 +6,9 @@ import { store } from './src/store';
 import AppNavigator from './src/navigation/AppNavigator';
 import ErrorBoundary from './src/components/ErrorBoundary';
 import 'react-native-url-polyfill/auto';
+import { Platform } from 'react-native';
 
-export default function App() {
+function App() {
   return (
     <Provider store={store}>
       <ErrorBoundary>
@@ -18,4 +19,9 @@ export default function App() {
   );
 }
 
-registerRootComponent(App); 
+// Only register root component for native platforms
+if (Platform.OS !== 'web') {
+  registerRootComponent(App);
+}
+
+export default App; 
