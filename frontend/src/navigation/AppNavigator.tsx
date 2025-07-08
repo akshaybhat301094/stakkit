@@ -1,8 +1,8 @@
-import React, { useEffect, useRef, useMemo, useCallback } from 'react';
+import React, { useEffect, useRef, useMemo, useCallback, useState } from 'react';
 import { NavigationContainer } from '@react-navigation/native';
 import { createStackNavigator } from '@react-navigation/stack';
 import { useAppDispatch, useAppSelector } from '../store/hooks';
-import { setUser, setLoading } from '../store/slices/authSlice';
+import { setSession, setLoading } from '../store/slices/authSlice';
 import { supabase } from '../services/supabase';
 import { Linking, Platform } from 'react-native';
 import ErrorBoundary from '../components/ErrorBoundary';
@@ -16,20 +16,30 @@ const Stack = createStackNavigator();
 
 const AppNavigator: React.FC = () => {
   const dispatch = useAppDispatch();
-  const { isAuthenticated, isLoading } = useAppSelector((state) => state.auth);
+  const { isAuthenticated, isLoading, user, session } = useAppSelector((state) => state.auth);
+  const [isNavigationReady, setIsNavigationReady] = useState(false);
   const authStateRef = useRef<string | null>(null);
   const debounceTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const isInitializedRef = useRef(false);
   const mountedRef = useRef(true);
 
+  // Debug current state
+  useEffect(() => {
+    if (isAuthenticated) {
+      setIsNavigationReady(true);
+    }
+  }, [isAuthenticated, user, session, isLoading, isNavigationReady]);
+
   // Memoize the navigation key to prevent unnecessary remounting
   const navigationKey = useMemo(() => {
-    return isAuthenticated ? 'authenticated' : 'unauthenticated';
-  }, [isAuthenticated]);
+    return `${isAuthenticated ? 'authenticated' : 'unauthenticated'}-${user?.id || 'none'}`;
+  }, [isAuthenticated, user?.id]);
 
   // Stable dispatch function using useCallback
   const stableDispatch = useCallback((action: any) => {
-    dispatch(action);
+    if (mountedRef.current) {
+      dispatch(action);
+    }
   }, [dispatch]);
 
   // Debounced auth state update
@@ -44,19 +54,12 @@ const AppNavigator: React.FC = () => {
       if (!mountedRef.current) return;
       
       const newUserId = session?.user?.id || null;
-      
-      // Prevent duplicate updates
-      if (authStateRef.current === newUserId) {
-        return;
-      }
-      
       authStateRef.current = newUserId;
-      stableDispatch(setUser(session?.user ?? null));
-    }, 100); // 100ms debounce
+      stableDispatch(setSession(session));
+    }, 100);
   }, [stableDispatch]);
 
   useEffect(() => {
-    let mounted = true;
     mountedRef.current = true;
 
     // Prevent multiple initializations
@@ -67,107 +70,105 @@ const AppNavigator: React.FC = () => {
 
     // Check for existing session
     const checkSession = async () => {
-      if (!mounted) return;
+      if (!mountedRef.current) return;
       
-      stableDispatch(setLoading(true));
       try {
+        stableDispatch(setLoading(true));
         const { data: { session }, error } = await supabase.auth.getSession();
+        
         if (error) {
           console.error('Error getting session:', error);
         }
         
-        if (mounted) {
+        if (mountedRef.current) {
           updateAuthState(session);
+          setIsNavigationReady(true);
         }
       } catch (error) {
         console.error('Error checking session:', error);
-        if (mounted) {
+        if (mountedRef.current) {
           updateAuthState(null);
+          setIsNavigationReady(true);
         }
       } finally {
-        if (mounted) {
+        if (mountedRef.current) {
           stableDispatch(setLoading(false));
         }
       }
     };
 
+    // Initialize session check
     checkSession();
 
-    // Listen for auth changes - this is our single source of truth
+    // Listen for auth changes
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, session) => {
-        if (!mounted) return;
+        if (!mountedRef.current) return;
         
-        console.log('Auth state changed:', event, session?.user?.id);
-        updateAuthState(session);
+        console.log('Auth state change event:', {
+          event,
+          userId: session?.user?.id,
+          hasSession: !!session,
+          hasUser: !!session?.user,
+          email: session?.user?.email,
+        });
         
-        // Handle successful OAuth sign-in
-        if (event === 'SIGNED_IN' && session?.user) {
-          console.log('User signed in successfully:', session.user.email);
+        // Handle auth state change
+        switch (event) {
+          case 'INITIAL_SESSION':
+            if (session) {
+              console.log('Initial session detected, updating auth state');
+              await updateAuthState(session);
+              setIsNavigationReady(true);
+            } else {
+              console.log('No initial session, clearing auth state');
+              await updateAuthState(null);
+              setIsNavigationReady(true);
+            }
+            break;
+          case 'SIGNED_IN':
+            console.log('Sign in detected, updating session');
+            await updateAuthState(session);
+            break;
+          case 'TOKEN_REFRESHED':
+            console.log('Token refreshed, updating session');
+            await updateAuthState(session);
+            break;
+          case 'USER_UPDATED':
+            console.log('User updated, updating session');
+            await updateAuthState(session);
+            break;
+          case 'SIGNED_OUT':
+            console.log('Sign out detected, clearing auth state');
+            await updateAuthState(null);
+            break;
+          default:
+            console.log('Unhandled auth event:', event);
+            // Still update the state for unhandled events if we have a session
+            if (session) {
+              await updateAuthState(session);
+            }
+            break;
         }
       }
     );
 
-    // Handle deep links for OAuth callback
-    const handleDeepLink = async (url: string) => {
-      console.log('Deep link received:', url);
-      
-      // Check if it's an OAuth callback
-      if (url.includes('auth/callback') || url.includes('access_token') || url.includes('error')) {
-        console.log('OAuth callback URL detected');
-        
-        try {
-          // Parse the URL to extract tokens
-          const urlObj = new URL(url);
-          const fragment = urlObj.hash || urlObj.search;
-          
-          if (fragment) {
-            // Parse fragment/query string to get tokens
-            const params = new URLSearchParams(fragment.replace('#', ''));
-            const accessToken = params.get('access_token');
-            const refreshToken = params.get('refresh_token');
-            const error = params.get('error');
-            
-            if (error) {
-              console.error('OAuth error:', error);
-              return;
-            }
-            
-            if (accessToken) {
-              console.log('Setting session with tokens from deep link');
-              // Set session - the auth state listener will handle the user state update
-              await supabase.auth.setSession({
-                access_token: accessToken,
-                refresh_token: refreshToken || '',
-              });
-              // Don't dispatch setUser here - let the auth state listener handle it
-            }
-          }
-        } catch (error) {
-          console.error('Error handling deep link:', error);
-        }
-      }
-    };
-
-    // Handle web OAuth callback
+    // Handle deep links and OAuth callbacks
     if (Platform.OS === 'web') {
-      // Check if current URL is OAuth callback
       const handleWebCallback = async () => {
-        const currentUrl = window.location.href;
-        console.log('Current URL:', currentUrl);
+        if (!mountedRef.current) return;
         
-        if (currentUrl.includes('/auth/callback')) {
+        const currentUrl = window.location.href;
+        if (currentUrl.includes('/auth/callback') || currentUrl.includes('#access_token=')) {
           console.log('Handling OAuth callback...');
           
           try {
-            // Wait a moment for Supabase to process the URL
-            await new Promise(resolve => setTimeout(resolve, 100));
+            // Let Supabase handle the callback
+            await new Promise(resolve => setTimeout(resolve, 200));
             
-            // Don't call getSession here as it might trigger the auth listener again
-            // The auth state listener will handle the session update
-            
-            // Clean up the URL
-            window.history.replaceState({}, document.title, '/');
+            // Clean up the URL without triggering a navigation
+            const cleanUrl = window.location.origin + window.location.pathname;
+            window.history.replaceState({}, document.title, cleanUrl);
           } catch (error) {
             console.error('Error handling web callback:', error);
           }
@@ -176,9 +177,9 @@ const AppNavigator: React.FC = () => {
 
       handleWebCallback();
       
-      // Listen for URL changes (for SPA navigation)
+      // Listen for URL changes
       const handlePopState = () => {
-        if (mounted) {
+        if (mountedRef.current) {
           handleWebCallback();
         }
       };
@@ -186,9 +187,7 @@ const AppNavigator: React.FC = () => {
       window.addEventListener('popstate', handlePopState);
       
       return () => {
-        mounted = false;
         mountedRef.current = false;
-        isInitializedRef.current = false;
         if (debounceTimerRef.current) {
           clearTimeout(debounceTimerRef.current);
         }
@@ -198,22 +197,20 @@ const AppNavigator: React.FC = () => {
     } else {
       // Mobile deep link handling
       const linkingListener = Linking.addEventListener('url', ({ url }) => {
-        if (mounted) {
+        if (mountedRef.current && url) {
           handleDeepLink(url);
         }
       });
 
       // Check for initial deep link
       Linking.getInitialURL().then((url) => {
-        if (url && mounted) {
+        if (url && mountedRef.current) {
           handleDeepLink(url);
         }
       });
 
       return () => {
-        mounted = false;
         mountedRef.current = false;
-        isInitializedRef.current = false;
         if (debounceTimerRef.current) {
           clearTimeout(debounceTimerRef.current);
         }
@@ -221,39 +218,88 @@ const AppNavigator: React.FC = () => {
         subscription.unsubscribe();
       };
     }
-  }, []); // Removed dispatch dependency to prevent infinite re-renders
+  }, []); // Empty dependency array to run only once
 
-  // Cleanup effect to ensure proper unmounting
-  useEffect(() => {
-    return () => {
-      mountedRef.current = false;
-      if (debounceTimerRef.current) {
-        clearTimeout(debounceTimerRef.current);
-        debounceTimerRef.current = null;
+  // Handle deep links for mobile
+  const handleDeepLink = async (url: string) => {
+    if (!url.includes('auth/callback') && !url.includes('access_token')) return;
+    
+    try {
+      // Add a small delay to allow Supabase to process the OAuth response
+      await new Promise(resolve => setTimeout(resolve, 1000));
+
+      // Try multiple times to get the session
+      for (let i = 0; i < 3; i++) {
+        const { data: { session }, error } = await supabase.auth.getSession();
+        
+        if (error) continue;
+
+        if (session) {
+          updateAuthState(session);
+          return;
+        }
+
+        if (i < 2) {
+          await new Promise(resolve => setTimeout(resolve, 1000));
+        }
       }
-    };
-  }, []);
 
-  if (isLoading) {
-    return (
-      <ErrorBoundary>
-        <LoadingScreen />
-      </ErrorBoundary>
-    );
+      // If we still don't have a session, try to parse the URL
+      const urlObj = new URL(url);
+      const fragment = urlObj.hash || urlObj.search;
+      
+      if (fragment) {
+        const params = new URLSearchParams(fragment.replace('#', ''));
+        const accessToken = params.get('access_token');
+        const refreshToken = params.get('refresh_token');
+        
+        if (accessToken) {
+          const { data: { session: newSession }, error: sessionError } = 
+            await supabase.auth.setSession({
+              access_token: accessToken,
+              refresh_token: refreshToken || '',
+            });
+            
+          if (sessionError) return;
+          
+          if (newSession) {
+            updateAuthState(newSession);
+          }
+        }
+      }
+    } catch (error) {
+      // Handle error silently
+    }
+  };
+
+  if (!isNavigationReady || isLoading) {
+    return <LoadingScreen />;
   }
 
   return (
-    <ErrorBoundary>
-      <NavigationContainer key={navigationKey}>
-        <Stack.Navigator screenOptions={{ headerShown: false }}>
-          {isAuthenticated ? (
-            <Stack.Screen name="Main" component={MainNavigator} />
-          ) : (
-            <Stack.Screen name="Auth" component={AuthNavigator} />
-          )}
-        </Stack.Navigator>
-      </NavigationContainer>
-    </ErrorBoundary>
+    <NavigationContainer key={navigationKey}>
+      <Stack.Navigator screenOptions={{ headerShown: false }}>
+        {isAuthenticated ? (
+          <Stack.Screen 
+            name="Main" 
+            component={MainNavigator}
+            options={{ 
+              animationEnabled: true,
+              gestureEnabled: false 
+            }}
+          />
+        ) : (
+          <Stack.Screen 
+            name="Auth" 
+            component={AuthNavigator}
+            options={{ 
+              animationEnabled: true,
+              gestureEnabled: false 
+            }}
+          />
+        )}
+      </Stack.Navigator>
+    </NavigationContainer>
   );
 };
 

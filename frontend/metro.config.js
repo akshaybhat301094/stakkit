@@ -4,6 +4,7 @@ const config = getDefaultConfig(__dirname);
 
 // Add web-specific resolver configuration
 config.resolver.platforms = ['ios', 'android', 'native', 'web'];
+config.resolver.sourceExts = [...config.resolver.sourceExts, 'web.js', 'web.ts', 'web.tsx'];
 
 // Add web-specific asset extensions and handle image processing
 config.resolver.assetExts = [
