@@ -18,6 +18,7 @@ import { Link } from '../../types/database';
 import LinkCard from '../../components/LinkCard';
 import { LinksService } from '../../services/linksService';
 import { useAppSelector } from '../../store/hooks';
+import LinkMetadataService from '../../services/linkMetadataService';
 
 
 type HomeScreenNavigationProp = StackNavigationProp<MainStackParamList, 'MainTabs'>;
@@ -147,6 +148,20 @@ const HomeScreen: React.FC = () => {
     navigation.navigate('Auth' as any);
   };
 
+  // Temporary debug function for YouTube metadata
+  const debugYouTubeMetadata = async () => {
+    console.log('🧪 Starting YouTube metadata debug...');
+    const youtubeLinks = state.links.filter(link => 
+      link.url.includes('youtube.com') || link.url.includes('youtu.be')
+    );
+    
+    for (const link of youtubeLinks) {
+      console.log('🔍 Testing link:', link.url, 'Current title:', link.title);
+      await LinkMetadataService.debugYouTubeMetadata(link.url);
+      console.log('---');
+    }
+  };
+
   const renderLinkCard = ({ item }: { item: Link }) => (
     <LinkCard
       link={item}
@@ -230,6 +245,14 @@ const HomeScreen: React.FC = () => {
         />
       )}
       
+      {/* Debug Button - Temporary */}
+      <TouchableOpacity 
+        style={[styles.fab, { right: 80, backgroundColor: '#FF9500' }]} 
+        onPress={debugYouTubeMetadata}
+      >
+        <Icon name="bug-report" size={20} color="#ffffff" />
+      </TouchableOpacity>
+
       {/* Floating Action Button */}
       <TouchableOpacity style={styles.fab} onPress={handleAddLink}>
         <Icon name="add" size={24} color="#ffffff" />

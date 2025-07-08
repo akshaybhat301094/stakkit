@@ -22,7 +22,9 @@ import { validateURL, extractURLsFromText, getDomainFromURL } from '../../utils/
 import { getSafeUserId } from '../../utils/authHelpers';
 import CollectionsService from '../../services/collectionsService';
 import LinksService from '../../services/linksService';
+import LinkMetadataService from '../../services/linkMetadataService';
 import { Collection } from '../../types/database';
+import { LinkPreview } from '../../types';
 
 interface AddLinkScreenProps {}
 
@@ -43,6 +45,10 @@ const AddLinkScreen: React.FC<AddLinkScreenProps> = () => {
   const [collections, setCollections] = useState<Collection[]>([]);
   const [showCollectionPicker, setShowCollectionPicker] = useState(false);
   const [clipboardUrl, setClipboardUrl] = useState<string | null>(null);
+  
+  // Preview state
+  const [preview, setPreview] = useState<LinkPreview | null>(null);
+  const [isLoadingPreview, setIsLoadingPreview] = useState(false);
 
   // Load collections on mount
   useEffect(() => {
@@ -113,8 +119,9 @@ const AddLinkScreen: React.FC<AddLinkScreenProps> = () => {
   const handleURLChange = useCallback((text: string) => {
     setUrl(text);
     
-    // Clear previous errors
+    // Clear previous errors and preview
     setUrlError(null);
+    setPreview(null);
     
     // Validate URL if not empty
     if (text.trim()) {
@@ -122,14 +129,33 @@ const AddLinkScreen: React.FC<AddLinkScreenProps> = () => {
       if (!validation.isValid) {
         setUrlError(validation.error || 'Invalid URL');
       } else {
-        // Auto-generate title from domain if no title exists
-        if (!title.trim()) {
-          const domain = getDomainFromURL(validation.normalizedUrl || text);
-          setTitle(domain);
-        }
+        // Fetch metadata for valid URL
+        fetchLinkPreview(validation.normalizedUrl || text);
       }
     }
-  }, [title]);
+  }, []);
+
+  const fetchLinkPreview = async (validUrl: string) => {
+    try {
+      setIsLoadingPreview(true);
+      const metadata = await LinkMetadataService.getMetadata(validUrl);
+      setPreview(metadata);
+      
+      // Auto-fill title if empty and metadata has title
+      if (!title.trim() && metadata.title) {
+        setTitle(metadata.title);
+      }
+    } catch (error) {
+      console.error('Error fetching link preview:', error);
+      // Fallback to domain name
+      if (!title.trim()) {
+        const domain = getDomainFromURL(validUrl);
+        setTitle(domain);
+      }
+    } finally {
+      setIsLoadingPreview(false);
+    }
+  };
 
   const handlePasteFromClipboard = () => {
     if (clipboardUrl) {
@@ -187,7 +213,10 @@ const AddLinkScreen: React.FC<AddLinkScreenProps> = () => {
     try {
       await LinksService.saveLink({
         url: normalizedUrl,
-        title: title.trim() || getDomainFromURL(normalizedUrl),
+        title: title.trim() || preview?.title || getDomainFromURL(normalizedUrl),
+        description: preview?.description,
+        image_url: preview?.image,
+        platform: preview?.platform,
         notes: notes.trim() || undefined,
         collectionIds: selectedCollectionId ? [selectedCollectionId] : undefined,
       }, userId);

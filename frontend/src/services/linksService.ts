@@ -12,6 +12,8 @@ export class LinksService {
     url: string;
     title?: string;
     description?: string;
+    image_url?: string;
+    platform?: string;
     notes?: string;
     collectionIds?: string[];
   }, userId?: string): Promise<Link> {
@@ -34,6 +36,8 @@ export class LinksService {
         url: linkData.url,
         title: linkData.title,
         description: linkData.description,
+        image_url: linkData.image_url,
+        platform: linkData.platform,
         notes: linkData.notes,
         is_pinned: false,
       };
