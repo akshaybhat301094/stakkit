@@ -42,16 +42,16 @@
 - [ ] **Link Preview System**
   - [ ] Implement Open Graph metadata fetching
   - [ ] Add oEmbed support for major platforms
-  - [ ] Create link preview component
+  - [x] Create link preview component
   - [ ] Handle platform-specific previews (Instagram, YouTube, TikTok, Twitter)
   - [ ] Add fallback for unsupported links
   - [ ] Implement caching for previews
 
-- [ ] **Manual Link Adding**
-  - [ ] Create "Add Link" screen
-  - [ ] Implement URL validation
-  - [ ] Add manual link paste functionality
-  - [ ] Preview generation on paste
+- [x] **Manual Link Adding**
+  - [x] Create "Add Link" screen
+  - [x] Implement URL validation
+  - [x] Add manual link paste functionality
+  - [x] Preview generation on paste
 
 - [ ] **Share Sheet Integration**
   - [ ] Configure iOS share extension
