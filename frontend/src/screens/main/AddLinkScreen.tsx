@@ -19,7 +19,7 @@ import { useAppSelector } from '../../store/hooks';
 
 // Import services and utilities
 import { validateURL, extractURLsFromText, getDomainFromURL } from '../../utils/urlValidation';
-import { canPerformDatabaseOperations, getSafeUserId, getUserDisplayInfo } from '../../utils/authHelpers';
+import { getSafeUserId } from '../../utils/authHelpers';
 import CollectionsService from '../../services/collectionsService';
 import LinksService from '../../services/linksService';
 import { Collection } from '../../types/database';
@@ -44,29 +44,15 @@ const AddLinkScreen: React.FC<AddLinkScreenProps> = () => {
   const [showCollectionPicker, setShowCollectionPicker] = useState(false);
   const [clipboardUrl, setClipboardUrl] = useState<string | null>(null);
 
-  // Get user display info
-  const userDisplayInfo = user?.id ? getUserDisplayInfo(user.id) : null;
-
   // Load collections on mount
   useEffect(() => {
     console.log('Auth state check:', { isAuthenticated, userId: user?.id });
     
     if (!user?.id) {
       console.log('No user ID available, redirecting...');
-      Alert.alert('Session Required', 'Please start a session to add links.', [
+      Alert.alert('Authentication Required', 'Please sign in to add links.', [
         { text: 'OK', onPress: () => navigation.goBack() }
       ]);
-      return;
-    }
-
-    // Check if user can perform database operations (both authenticated and guest users)
-    if (!canPerformDatabaseOperations(user.id)) {
-      console.log('Invalid user ID format:', user.id);
-      Alert.alert(
-        'Session Error', 
-        'Invalid session detected. Please restart the app.',
-        [{ text: 'OK', onPress: () => navigation.goBack() }]
-      );
       return;
     }
 
@@ -105,30 +91,7 @@ const AddLinkScreen: React.FC<AddLinkScreenProps> = () => {
       }
     } catch (error: any) {
       console.error('Error loading collections:', error);
-      
-      // Handle specific database errors more gracefully for guest users
-      if (error.code === '22P02') {
-        console.log('UUID format error detected, user may be in guest mode');
-        // For guest users, we might want to create collections locally or handle differently
-        // For now, let's create a default collection in guest mode
-        try {
-          const guestCollection: Collection = {
-            id: `guest-collection-${Date.now()}`,
-            user_id: safeUserId,
-            name: 'My Links',
-            description: 'Default collection for guest user',
-            is_public: false,
-            created_at: new Date().toISOString(),
-            updated_at: new Date().toISOString(),
-          };
-          setCollections([guestCollection]);
-          setSelectedCollectionId(guestCollection.id);
-        } catch (guestError) {
-          Alert.alert('Error', 'Unable to initialize collections for guest mode.');
-        }
-      } else {
-        Alert.alert('Error', `Failed to load collections: ${error.message}`);
-      }
+      Alert.alert('Error', `Failed to load collections: ${error.message}`);
     } finally {
       setIsLoading(false);
     }
@@ -198,41 +161,23 @@ const AddLinkScreen: React.FC<AddLinkScreenProps> = () => {
         return;
       }
 
-      // For guest users, show a different message about temporary storage
-      if (userDisplayInfo?.isGuest) {
-        // Skip duplicate check for guest users or handle differently
-        await saveLink(validation.normalizedUrl!, safeUserId);
-      } else {
-        // Check for duplicates for authenticated users
-        const existingLink = await LinksService.checkDuplicateURL(validation.normalizedUrl!, safeUserId);
-        if (existingLink) {
-          Alert.alert(
-            'Duplicate Link',
-            'This URL has already been saved. Do you want to save it again?',
-            [
-              { text: 'Cancel', style: 'cancel' },
-              { text: 'Save Anyway', onPress: () => saveLink(validation.normalizedUrl!, safeUserId) }
-            ]
-          );
-          return;
-        }
-        await saveLink(validation.normalizedUrl!, safeUserId);
+      // Check for duplicates
+      const existingLink = await LinksService.checkDuplicateURL(validation.normalizedUrl!, safeUserId);
+      if (existingLink) {
+        Alert.alert(
+          'Duplicate Link',
+          'This URL has already been saved. Do you want to save it again?',
+          [
+            { text: 'Cancel', style: 'cancel' },
+            { text: 'Save Anyway', onPress: () => saveLink(validation.normalizedUrl!, safeUserId) }
+          ]
+        );
+        return;
       }
+      await saveLink(validation.normalizedUrl!, safeUserId);
     } catch (error: any) {
       console.error('Error saving link:', error);
-      
-      // Handle guest user save differently
-      if (userDisplayInfo?.isGuest && error.code === '22P02') {
-        // For guest users, we could save to local storage instead
-        console.log('Guest user detected, could implement local storage fallback');
-        Alert.alert(
-          'Guest Mode', 
-          'Link saved temporarily! Sign up to save your links permanently.',
-          [{ text: 'OK', onPress: () => navigation.goBack() }]
-        );
-      } else {
-        Alert.alert('Error', `Failed to save link: ${error.message}`);
-      }
+      Alert.alert('Error', `Failed to save link: ${error.message}`);
     } finally {
       setIsSaving(false);
     }
@@ -247,11 +192,7 @@ const AddLinkScreen: React.FC<AddLinkScreenProps> = () => {
         collectionIds: selectedCollectionId ? [selectedCollectionId] : undefined,
       }, userId);
 
-      const successMessage = userDisplayInfo?.isGuest 
-        ? 'Link saved temporarily! Sign up to save permanently.' 
-        : 'Link saved successfully!';
-
-      Alert.alert('Success', successMessage, [
+      Alert.alert('Success', 'Link saved successfully!', [
         { text: 'OK', onPress: () => navigation.goBack() }
       ]);
     } catch (error: any) {
@@ -309,16 +250,6 @@ const AddLinkScreen: React.FC<AddLinkScreenProps> = () => {
             )}
           </TouchableOpacity>
         </View>
-
-        {/* Guest Mode Banner */}
-        {userDisplayInfo?.isGuest && (
-          <View style={styles.guestBanner}>
-            <Icon name="info-outline" size={16} color="#FF9500" />
-            <Text style={styles.guestBannerText}>
-              {userDisplayInfo.displayText}
-            </Text>
-          </View>
-        )}
 
         <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
           {/* Clipboard suggestion */}
@@ -467,21 +398,6 @@ const styles = StyleSheet.create({
   },
   saveButtonTextDisabled: {
     color: '#8E8E93',
-  },
-  guestBanner: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#FFF3E0',
-    paddingHorizontal: 16,
-    paddingVertical: 8,
-    borderBottomWidth: 1,
-    borderBottomColor: '#FFE0B2',
-  },
-  guestBannerText: {
-    marginLeft: 8,
-    fontSize: 14,
-    color: '#FF9500',
-    fontWeight: '500',
   },
   content: {
     flex: 1,

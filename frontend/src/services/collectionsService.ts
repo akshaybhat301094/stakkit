@@ -1,6 +1,5 @@
 import { supabase } from './supabase';
 import { Collection, InsertCollection, UpdateCollection } from '../types/database';
-import { isGuestUser } from '../utils/authHelpers';
 
 /**
  * Collections service for managing user collections
@@ -23,11 +22,6 @@ export class CollectionsService {
         userIdToUse = user.id;
       }
 
-      // Handle guest users differently
-      if (isGuestUser(userIdToUse)) {
-        return this.getGuestCollections(userIdToUse);
-      }
-
       const { data, error } = await supabase
         .from('collections')
         .select('*')
@@ -41,31 +35,8 @@ export class CollectionsService {
       return data || [];
     } catch (error) {
       console.error('Error fetching collections:', error);
-      
-      // Fallback for guest users if database fails
-      if (userId && isGuestUser(userId)) {
-        return this.getGuestCollections(userId);
-      }
-      
       throw error;
     }
-  }
-
-  /**
-   * Get collections for guest users (local/temporary)
-   */
-  private static getGuestCollections(userId: string): Collection[] {
-    return [
-      {
-        id: `guest-collection-${userId}`,
-        user_id: userId,
-        name: 'My Links',
-        description: 'Temporary collection for guest user',
-        is_public: false,
-        created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString(),
-      }
-    ];
   }
 
   /**
@@ -85,11 +56,6 @@ export class CollectionsService {
         userIdToUse = user.id;
       }
 
-      // Handle guest users differently
-      if (isGuestUser(userIdToUse)) {
-        return this.createGuestCollection(collection, userIdToUse);
-      }
-
       const { data, error } = await supabase
         .from('collections')
         .insert([{
@@ -106,29 +72,8 @@ export class CollectionsService {
       return data;
     } catch (error) {
       console.error('Error creating collection:', error);
-      
-      // Fallback for guest users
-      if (userId && isGuestUser(userId)) {
-        return this.createGuestCollection(collection, userId);
-      }
-      
       throw error;
     }
-  }
-
-  /**
-   * Create a collection for guest users (local/temporary)
-   */
-  private static createGuestCollection(collection: Omit<InsertCollection, 'user_id'>, userId: string): Collection {
-    return {
-      id: `guest-collection-${Date.now()}`,
-      user_id: userId,
-      name: collection.name,
-      description: collection.description,
-      is_public: collection.is_public || false,
-      created_at: new Date().toISOString(),
-      updated_at: new Date().toISOString(),
-    };
   }
 
   /**
@@ -136,19 +81,6 @@ export class CollectionsService {
    */
   static async updateCollection(id: string, updates: UpdateCollection): Promise<Collection> {
     try {
-      // For guest collections, just return a mock updated collection
-      if (id.startsWith('guest-collection-')) {
-        return {
-          id,
-          user_id: updates.user_id || '',
-          name: updates.name || 'Updated Collection',
-          description: updates.description,
-          is_public: updates.is_public || false,
-          created_at: new Date().toISOString(),
-          updated_at: new Date().toISOString(),
-        };
-      }
-
       const { data, error } = await supabase
         .from('collections')
         .update(updates)
@@ -172,12 +104,6 @@ export class CollectionsService {
    */
   static async deleteCollection(id: string): Promise<void> {
     try {
-      // For guest collections, just ignore the delete operation
-      if (id.startsWith('guest-collection-')) {
-        console.log('Guest collection delete ignored:', id);
-        return;
-      }
-
       const { error } = await supabase
         .from('collections')
         .delete()
@@ -221,10 +147,8 @@ export class CollectionsService {
 
       // Create default collection if none exists
       return await this.createCollection({
-        name: isGuestUser(userIdToUse) ? 'My Links' : 'Quick Saves',
-        description: isGuestUser(userIdToUse) 
-          ? 'Temporary collection for guest user' 
-          : 'Automatically created for quick link saves',
+        name: 'Quick Saves',
+        description: 'Automatically created for quick link saves',
         is_public: false
       }, userIdToUse);
     } catch (error) {

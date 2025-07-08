@@ -1,6 +1,5 @@
 import { supabase } from './supabase';
 import { Link, InsertLink, UpdateLink, Collection } from '../types/database';
-import { isGuestUser } from '../utils/authHelpers';
 
 /**
  * Links service for managing user saved links
@@ -27,11 +26,6 @@ export class LinksService {
         }
         
         userIdToUse = user.id;
-      }
-
-      // Handle guest users differently
-      if (isGuestUser(userIdToUse)) {
-        return this.saveGuestLink(linkData, userIdToUse);
       }
 
       // Create the link record
@@ -62,43 +56,8 @@ export class LinksService {
       return link;
     } catch (error) {
       console.error('Error saving link:', error);
-      
-      // Fallback for guest users
-      if (userId && isGuestUser(userId)) {
-        return this.saveGuestLink(linkData, userId);
-      }
-      
       throw error;
     }
-  }
-
-  /**
-   * Save a link for guest users (local/temporary)
-   */
-  private static saveGuestLink(linkData: {
-    url: string;
-    title?: string;
-    description?: string;
-    notes?: string;
-    collectionIds?: string[];
-  }, userId: string): Link {
-         const guestLink: Link = {
-       id: `guest-link-${Date.now()}`,
-       user_id: userId,
-       url: linkData.url,
-       title: linkData.title,
-       description: linkData.description,
-       notes: linkData.notes,
-       image_url: undefined,
-       platform: undefined,
-       tags: undefined,
-       is_pinned: false,
-       created_at: new Date().toISOString(),
-       updated_at: new Date().toISOString(),
-     };
-
-    console.log('Guest link created locally:', guestLink);
-    return guestLink;
   }
 
   /**
@@ -106,12 +65,6 @@ export class LinksService {
    */
   static async addLinkToCollections(linkId: string, collectionIds: string[]): Promise<void> {
     try {
-      // Skip for guest links
-      if (linkId.startsWith('guest-link-')) {
-        console.log('Guest link collection association skipped:', linkId);
-        return;
-      }
-
       const collectionLinks = collectionIds.map(collectionId => ({
         link_id: linkId,
         collection_id: collectionId,
@@ -147,11 +100,6 @@ export class LinksService {
         userIdToUse = user.id;
       }
 
-      // Handle guest users differently
-      if (isGuestUser(userIdToUse)) {
-        return this.getGuestLinks(userIdToUse);
-      }
-
       const { data, error } = await supabase
         .from('links')
         .select('*')
@@ -165,24 +113,8 @@ export class LinksService {
       return data || [];
     } catch (error) {
       console.error('Error fetching links:', error);
-      
-      // Fallback for guest users
-      if (userId && isGuestUser(userId)) {
-        return this.getGuestLinks(userId);
-      }
-      
       throw error;
     }
-  }
-
-  /**
-   * Get links for guest users (local/temporary)
-   */
-  private static getGuestLinks(userId: string): Link[] {
-    // In a real implementation, you might store these in AsyncStorage
-    // For now, return empty array
-    console.log('Getting guest links for:', userId);
-    return [];
   }
 
   /**
@@ -190,11 +122,6 @@ export class LinksService {
    */
   static async getLinksInCollection(collectionId: string): Promise<Link[]> {
     try {
-      // For guest collections, return empty array
-      if (collectionId.startsWith('guest-collection-')) {
-        return [];
-      }
-
       const { data, error } = await supabase
         .from('collection_links')
         .select(`
@@ -220,24 +147,6 @@ export class LinksService {
    */
   static async updateLink(id: string, updates: UpdateLink): Promise<Link> {
     try {
-      // For guest links, return a mock updated link
-      if (id.startsWith('guest-link-')) {
-        return {
-          id,
-          user_id: updates.user_id || '',
-          url: updates.url || '',
-          title: updates.title,
-          description: updates.description,
-          image_url: updates.image_url,
-          platform: updates.platform,
-          notes: updates.notes,
-          tags: updates.tags,
-          is_pinned: updates.is_pinned || false,
-          created_at: new Date().toISOString(),
-          updated_at: new Date().toISOString(),
-        };
-      }
-
       const { data, error } = await supabase
         .from('links')
         .update(updates)
@@ -261,12 +170,6 @@ export class LinksService {
    */
   static async deleteLink(id: string): Promise<void> {
     try {
-      // For guest links, just ignore the delete operation
-      if (id.startsWith('guest-link-')) {
-        console.log('Guest link delete ignored:', id);
-        return;
-      }
-
       // First delete from collection_links (due to foreign key constraints)
       await supabase
         .from('collection_links')
@@ -305,12 +208,6 @@ export class LinksService {
         userIdToUse = user.id;
       }
 
-      // For guest users, skip duplicate check or implement local check
-      if (isGuestUser(userIdToUse)) {
-        console.log('Skipping duplicate check for guest user');
-        return null;
-      }
-
       const { data, error } = await supabase
         .from('links')
         .select('*')
@@ -325,12 +222,6 @@ export class LinksService {
       return data;
     } catch (error) {
       console.error('Error checking duplicate URL:', error);
-      
-      // For guest users, always return null (no duplicates)
-      if (userId && isGuestUser(userId)) {
-        return null;
-      }
-      
       throw error;
     }
   }
