@@ -94,11 +94,11 @@ const HomeScreen: React.FC = () => {
   // Refresh links when screen comes into focus (useful when returning from AddLinkScreen)
   useFocusEffect(
     useCallback(() => {
-      // Only fetch if not currently loading and not already fetching
-      if (!state.loading && !fetchInProgressRef.current && state.links.length === 0) {
+      // Always refresh when screen comes into focus to ensure latest data
+      if (!fetchInProgressRef.current) {
         fetchLinks();
       }
-    }, [state.loading, state.links.length])
+    }, [])
   );
 
   const handleRefresh = () => {
