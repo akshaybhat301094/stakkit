@@ -147,6 +147,20 @@ const HomeScreen: React.FC = () => {
     navigation.navigate('Auth' as any);
   };
 
+  // Temporary debug function for Twitter metadata
+  const debugTwitterMetadata = async () => {
+    console.log('🧪 Starting Twitter metadata debug...');
+    const twitterLinks = state.links.filter(link => 
+      link.url.includes('twitter.com') || link.url.includes('x.com')
+    );
+    
+    for (const link of twitterLinks) {
+      console.log('🔍 Testing Twitter link:', link.url, 'Current title:', link.title);
+      const LinkMetadataService = (await import('../../services/linkMetadataService')).default;
+      await LinkMetadataService.debugTwitterMetadata(link.url);
+      console.log('---');
+    }
+  };
 
 
   const renderLinkCard = ({ item }: { item: Link }) => (
@@ -232,6 +246,14 @@ const HomeScreen: React.FC = () => {
         />
       )}
       
+      {/* Debug Button - Temporary */}
+      <TouchableOpacity 
+        style={[styles.fab, { right: 80, backgroundColor: '#1DA1F2' }]} 
+        onPress={debugTwitterMetadata}
+      >
+        <Icon name="bug-report" size={20} color="#ffffff" />
+      </TouchableOpacity>
+
       {/* Floating Action Button */}
       <TouchableOpacity style={styles.fab} onPress={handleAddLink}>
         <Icon name="add" size={24} color="#ffffff" />

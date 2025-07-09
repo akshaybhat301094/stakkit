@@ -139,16 +139,43 @@ export class LinkMetadataService {
     // Try to get better metadata for Twitter/X
     if (platform === 'twitter') {
       try {
+        console.log('🐦 Attempting Twitter metadata fetch for:', url);
         const twitterData = await this.fetchTwitterMetadata(url);
+        console.log('🐦 Twitter oEmbed result:', twitterData);
+        
         if (twitterData) {
           title = twitterData.title || title;
           image = twitterData.thumbnail_url;
           description = this.getTwitterContentType(url);
           siteName = twitterData.provider_name || 'Twitter';
+          console.log('✅ Using Twitter oEmbed data - Title:', title);
+        } else {
+          console.log('❌ Twitter oEmbed returned null, using fallback parsing');
+          // Enhanced fallback using URL parsing
+          const twitterUrlData = this.extractTwitterData(url);
+          if (twitterUrlData.username && twitterUrlData.tweetId) {
+            title = `Tweet by @${twitterUrlData.username}`;
+            description = 'Twitter Post';
+            console.log('✅ Using Twitter URL parsing - Title:', title);
+          } else if (twitterUrlData.username) {
+            title = `@${twitterUrlData.username} on Twitter`;
+            description = 'Twitter Profile';
+            console.log('✅ Using Twitter username parsing - Title:', title);
+          }
         }
       } catch (error) {
         console.warn('Twitter metadata fetch failed, using fallback:', error);
-        // Keep the fallback title and description
+        // Enhanced fallback using URL parsing
+        const twitterUrlData = this.extractTwitterData(url);
+        if (twitterUrlData.username && twitterUrlData.tweetId) {
+          title = `Tweet by @${twitterUrlData.username}`;
+          description = 'Twitter Post';
+          console.log('⚠️ Using Twitter error fallback - Title:', title);
+        } else if (twitterUrlData.username) {
+          title = `@${twitterUrlData.username} on Twitter`;
+          description = 'Twitter Profile';
+          console.log('⚠️ Using Twitter username fallback - Title:', title);
+        }
       }
     }
     
