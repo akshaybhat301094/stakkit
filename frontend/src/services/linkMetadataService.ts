@@ -86,7 +86,7 @@ export class LinkMetadataService {
       case 'youtube': return 'YouTube Video';
       case 'instagram': return 'Instagram Post';
       case 'tiktok': return 'TikTok Video';
-      case 'twitter': return 'Twitter Post';
+      case 'twitter': return 'Twitter/X Post';
       case 'web': return 'Website';
       default: return 'Saved Link';
     }
@@ -135,6 +135,22 @@ export class LinkMetadataService {
         }
       }
     }
+
+    // Try to get better metadata for Twitter/X
+    if (platform === 'twitter') {
+      try {
+        const twitterData = await this.fetchTwitterMetadata(url);
+        if (twitterData) {
+          title = twitterData.title || title;
+          image = twitterData.thumbnail_url;
+          description = this.getTwitterContentType(url);
+          siteName = twitterData.provider_name || 'Twitter';
+        }
+      } catch (error) {
+        console.warn('Twitter metadata fetch failed, using fallback:', error);
+        // Keep the fallback title and description
+      }
+    }
     
     return {
       url,
@@ -160,6 +176,24 @@ export class LinkMetadataService {
       return data;
     } catch (error) {
       console.warn('YouTube oEmbed fetch failed:', error);
+      return null;
+    }
+  }
+
+  // Fetch Twitter/X metadata using oEmbed API
+  static async fetchTwitterMetadata(url: string): Promise<oEmbedData | null> {
+    try {
+      const oembedUrl = `https://publish.twitter.com/oembed?url=${encodeURIComponent(url)}&format=json`;
+      const response = await fetch(oembedUrl);
+      
+      if (!response.ok) {
+        return null;
+      }
+      
+      const data = await response.json();
+      return data;
+    } catch (error) {
+      console.warn('Twitter oEmbed fetch failed:', error);
       return null;
     }
   }
@@ -211,7 +245,14 @@ export class LinkMetadataService {
       }
       
       if (hostname.includes('twitter.com') || hostname.includes('x.com')) {
-        return 'Twitter Post';
+        // Enhanced Twitter URL parsing
+        const twitterData = this.extractTwitterData(url);
+        if (twitterData.username && twitterData.tweetId) {
+          return `Tweet by @${twitterData.username}`;
+        } else if (twitterData.username) {
+          return `@${twitterData.username} on Twitter`;
+        }
+        return this.getTwitterContentType(url);
       }
       
       // Extract meaningful part from path
@@ -245,6 +286,60 @@ export class LinkMetadataService {
     }
   }
 
+  // Get Twitter content type for description
+  private static getTwitterContentType(url: string): string {
+    try {
+      const urlObj = new URL(url);
+      if (urlObj.pathname.includes('/status/')) {
+        return 'Twitter Post';
+      }
+      if (urlObj.pathname.includes('/tweet/')) {
+        return 'Twitter Post';
+      }
+      if (urlObj.pathname.includes('/photo/')) {
+        return 'Twitter Photo';
+      }
+      if (urlObj.pathname.includes('/video/')) {
+        return 'Twitter Video';
+      }
+      return 'Twitter Post';
+    } catch {
+      return 'Twitter Post';
+    }
+  }
+
+  // Extract Twitter data from URL
+  private static extractTwitterData(url: string): { username?: string; tweetId?: string } {
+    try {
+      const urlObj = new URL(url);
+      const pathParts = urlObj.pathname.split('/').filter(part => part.length > 0);
+      
+      let username: string | undefined;
+      let tweetId: string | undefined;
+
+      // Parse Twitter URL patterns
+      // https://twitter.com/username/status/123456789
+      // https://x.com/username/status/123456789
+      for (let i = 0; i < pathParts.length; i++) {
+        const part = pathParts[i];
+        
+        if (part === 'status' && pathParts[i + 1] && pathParts[i - 1]) {
+          username = pathParts[i - 1];
+          tweetId = pathParts[i + 1];
+          break;
+        } else if (i === 0 && part !== 'status' && part !== 'i' && part !== 'intent') {
+          // First path part is likely a username (excluding special paths)
+          username = part;
+        }
+      }
+
+      return { username, tweetId };
+    } catch (error) {
+      console.warn('Error parsing Twitter URL:', error);
+      return {};
+    }
+  }
+
   // Clear cache
   static clearCache(): void {
     this.cache.clear();
@@ -274,6 +369,37 @@ export class LinkMetadataService {
       if (oembedData) {
         console.log('✅ Title found:', oembedData.title);
         console.log('🖼️ Thumbnail found:', oembedData.thumbnail_url);
+      } else {
+        console.log('❌ No oEmbed data returned');
+      }
+    } catch (error) {
+      console.error('💥 oEmbed error:', error);
+    }
+    
+    // Test the full metadata flow
+    try {
+      const fullMetadata = await this.getMetadata(url);
+      console.log('📋 Full metadata result:', fullMetadata);
+    } catch (error) {
+      console.error('💥 Full metadata error:', error);
+    }
+  }
+
+  // Debug function to test Twitter metadata fetching
+  static async debugTwitterMetadata(url: string): Promise<void> {
+    console.log('🧪 DEBUG: Testing Twitter metadata for:', url);
+    
+    try {
+      const twitterData = this.extractTwitterData(url);
+      console.log('🐦 Twitter URL parsing:', twitterData);
+      
+      const oembedData = await this.fetchTwitterMetadata(url);
+      console.log('🐦 Twitter oEmbed response:', oembedData);
+      
+      if (oembedData) {
+        console.log('✅ Title found:', oembedData.title);
+        console.log('🖼️ Thumbnail found:', oembedData.thumbnail_url);
+        console.log('📝 Provider found:', oembedData.provider_name);
       } else {
         console.log('❌ No oEmbed data returned');
       }
