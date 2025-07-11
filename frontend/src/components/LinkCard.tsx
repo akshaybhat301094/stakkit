@@ -20,9 +20,10 @@ interface LinkCardProps {
   onEdit?: (link: Link) => void;
   onDelete?: (link: Link) => void;
   onShare?: (link: Link) => void;
+  onAddToCollection?: (link: Link) => void;
 }
 
-const LinkCard: React.FC<LinkCardProps> = ({ link, onEdit, onDelete, onShare }) => {
+const LinkCard: React.FC<LinkCardProps> = ({ link, onEdit, onDelete, onShare, onAddToCollection }) => {
   const [preview, setPreview] = useState<LinkPreview | null>(null);
   const [isLoadingPreview, setIsLoadingPreview] = useState(true);
   const [imageError, setImageError] = useState(false);
@@ -217,6 +218,16 @@ const LinkCard: React.FC<LinkCardProps> = ({ link, onEdit, onDelete, onShare }) 
                 hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
               >
                 <Icon name="share" size={20} color="#8E8E93" />
+              </TouchableOpacity>
+            )}
+            
+            {onAddToCollection && (
+              <TouchableOpacity 
+                style={styles.actionButton} 
+                onPress={() => onAddToCollection(link)}
+                hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+              >
+                <Icon name="create-new-folder" size={20} color="#8E8E93" />
               </TouchableOpacity>
             )}
             

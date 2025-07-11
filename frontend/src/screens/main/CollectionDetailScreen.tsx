@@ -17,6 +17,7 @@ import { MainStackParamList } from '../../navigation/MainNavigator';
 import { Link, Collection } from '../../types/database';
 import LinkCard from '../../components/LinkCard';
 import { LinksLoadingSkeleton } from '../../components/LoadingCard';
+import { AddToCollectionModal } from '../../components/AddToCollectionModal';
 import { LinksService } from '../../services/linksService';
 import { useAppSelector } from '../../store/hooks';
 
@@ -27,6 +28,8 @@ interface CollectionDetailScreenState {
   loading: boolean;
   refreshing: boolean;
   error: string | null;
+  showAddToCollectionModal: boolean;
+  selectedLinkForCollection: Link | null;
 }
 
 interface CollectionDetailRouteParams {
@@ -43,6 +46,8 @@ const CollectionDetailScreen: React.FC = () => {
     loading: true,
     refreshing: false,
     error: null,
+    showAddToCollectionModal: false,
+    selectedLinkForCollection: null,
   });
   const fetchInProgressRef = useRef(false);
 
@@ -164,6 +169,27 @@ const CollectionDetailScreen: React.FC = () => {
     }
   };
 
+  const handleAddToCollection = (link: Link) => {
+    setState(prev => ({
+      ...prev,
+      showAddToCollectionModal: true,
+      selectedLinkForCollection: link,
+    }));
+  };
+
+  const handleCloseAddToCollectionModal = () => {
+    setState(prev => ({
+      ...prev,
+      showAddToCollectionModal: false,
+      selectedLinkForCollection: null,
+    }));
+  };
+
+  const handleAddToCollectionSuccess = () => {
+    // Refresh links to show updated collection relationships
+    fetchCollectionLinks(true);
+  };
+
   const handleSignInAgain = () => {
     // Navigate back to auth flow
     navigation.navigate('Auth' as any);
@@ -175,6 +201,7 @@ const CollectionDetailScreen: React.FC = () => {
       onEdit={handleEditLink}
       onDelete={handleDeleteLink}
       onShare={handleShareLink}
+      onAddToCollection={handleAddToCollection}
     />
   );
 
@@ -351,6 +378,16 @@ const CollectionDetailScreen: React.FC = () => {
       <TouchableOpacity style={styles.fab} onPress={handleAddLink}>
         <Icon name="add" size={24} color="#ffffff" />
       </TouchableOpacity>
+
+      {/* Add to Collection Modal */}
+      {state.showAddToCollectionModal && state.selectedLinkForCollection && (
+        <AddToCollectionModal
+          visible={state.showAddToCollectionModal}
+          onClose={handleCloseAddToCollectionModal}
+          link={state.selectedLinkForCollection}
+          onSuccess={handleAddToCollectionSuccess}
+        />
+      )}
     </SafeAreaView>
   );
 };
