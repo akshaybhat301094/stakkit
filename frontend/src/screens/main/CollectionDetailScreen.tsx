@@ -110,7 +110,7 @@ const CollectionDetailScreen: React.FC = () => {
   };
 
   const handleAddLink = () => {
-    navigation.navigate('AddLink');
+    navigation.navigate('AddLink', { selectedCollectionId: collection.id });
   };
 
   const handleBack = () => {
