@@ -62,22 +62,6 @@ export const authApi = createApi({
       },
       invalidatesTags: ['User'],
     }),
-    signInAsGuest: builder.mutation<AuthResponse, void>({
-      queryFn: async () => {
-        try {
-          const { data, error } = await supabase.auth.signInAnonymously();
-
-          if (error) {
-            return { error: { status: 'CUSTOM_ERROR', error: error.message } };
-          }
-
-          return { data: { user: data.user, session: data.session } };
-        } catch (error: any) {
-          return { error: { status: 'CUSTOM_ERROR', error: error.message || 'Failed to sign in as guest' } };
-        }
-      },
-      invalidatesTags: ['User'],
-    }),
     signOut: builder.mutation<void, void>({
       queryFn: async () => {
         try {
@@ -115,7 +99,6 @@ export const authApi = createApi({
 export const {
   useSignInWithOtpMutation,
   useVerifyOtpMutation,
-  useSignInAsGuestMutation,
   useSignOutMutation,
   useGetSessionQuery,
 } = authApi; 

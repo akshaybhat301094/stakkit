@@ -7,6 +7,7 @@ export interface LinkPreview {
   image?: string;
   platform?: string;
   siteName?: string;
+  timestamp?: number;
 }
 
 export interface ShareData {

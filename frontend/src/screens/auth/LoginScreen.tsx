@@ -14,7 +14,7 @@ import {
 import { useNavigation } from '@react-navigation/native';
 import { StackNavigationProp } from '@react-navigation/stack';
 import { AuthStackParamList } from '../../navigation/AuthNavigator';
-import { useSignInWithOtpMutation, useSignInAsGuestMutation } from '../../store/api/authApi';
+import { useSignInWithOtpMutation } from '../../store/api/authApi';
 import { useDispatch } from 'react-redux';
 import { setUser, setSession } from '../../store/slices/authSlice';
 import * as WebBrowser from 'expo-web-browser';
@@ -27,7 +27,6 @@ const LoginScreen: React.FC = () => {
   const dispatch = useDispatch();
   const [email, setEmail] = useState('');
   const [signInWithOtp, { isLoading: isOtpLoading }] = useSignInWithOtpMutation();
-  const [signInAsGuest, { isLoading: isGuestLoading }] = useSignInAsGuestMutation();
   const [isGoogleLoading, setGoogleLoading] = useState(false);
 
   const validateEmail = (email: string) => {
@@ -55,25 +54,6 @@ const LoginScreen: React.FC = () => {
       navigation.navigate('Otp', { email });
     } catch (error: any) {
       Alert.alert('Error', error.message || 'Failed to send verification code');
-    }
-  };
-
-  const handleGuestSignIn = async () => {
-    try {
-      const result = await signInAsGuest().unwrap();
-      
-      if (result.error) {
-        throw new Error(result.error);
-      }
-
-      // Set the user and session in the auth state
-      if (result.session) {
-        dispatch(setSession(result.session));
-      }
-      
-      // The auth state listener will handle the navigation automatically
-    } catch (error: any) {
-      Alert.alert('Error', error.message || 'Failed to sign in as guest');
     }
   };
 
@@ -203,7 +183,7 @@ const LoginScreen: React.FC = () => {
             </View>
 
             <TouchableOpacity
-              style={[styles.button, { backgroundColor: '#4285F4', marginBottom: 8 }]}
+              style={[styles.button, { backgroundColor: '#4285F4' }]}
               onPress={handleGoogleSignIn}
               disabled={isGoogleLoading}
             >
@@ -213,22 +193,6 @@ const LoginScreen: React.FC = () => {
                 <Text style={{ color: '#FFFFFF', fontWeight: '600', fontSize: 17 }}>Login with Google</Text>
               )}
             </TouchableOpacity>
-
-            <TouchableOpacity
-              style={[styles.button, styles.guestButton]}
-              onPress={handleGuestSignIn}
-              disabled={isGuestLoading}
-            >
-              {isGuestLoading ? (
-                <ActivityIndicator color="#8E8E93" />
-              ) : (
-                <Text style={styles.guestButtonText}>Continue as Guest</Text>
-              )}
-            </TouchableOpacity>
-
-            <Text style={styles.developmentNote}>
-              Development Mode: Guest access will be removed in production
-            </Text>
           </View>
 
           <View style={styles.footer}>
@@ -326,24 +290,6 @@ const styles = StyleSheet.create({
     fontSize: 15,
     color: '#8E8E93',
     marginHorizontal: 16,
-  },
-  guestButton: {
-    backgroundColor: '#F2F2F7',
-    borderWidth: 1,
-    borderColor: '#E5E5E7',
-    marginBottom: 8,
-  },
-  guestButtonText: {
-    fontSize: 17,
-    fontWeight: '600',
-    color: '#8E8E93',
-  },
-  developmentNote: {
-    fontSize: 12,
-    color: '#FF9500',
-    textAlign: 'center',
-    fontStyle: 'italic',
-    marginBottom: 16,
   },
   footer: {
     alignItems: 'center',
