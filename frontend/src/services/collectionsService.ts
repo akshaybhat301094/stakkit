@@ -156,6 +156,77 @@ export class CollectionsService {
       throw error;
     }
   }
+
+  /**
+   * Get collections with link counts for a specific user
+   */
+  static async getUserCollectionsWithCounts(userId?: string): Promise<(Collection & { linkCount: number })[]> {
+    try {
+      let userIdToUse = userId;
+      
+      if (!userIdToUse) {
+        const { data: { user }, error: authError } = await supabase.auth.getUser();
+        
+        if (authError || !user) {
+          throw new Error('User not authenticated');
+        }
+        
+        userIdToUse = user.id;
+      }
+
+      // First get all collections
+      const { data: collections, error: collectionsError } = await supabase
+        .from('collections')
+        .select('*')
+        .eq('user_id', userIdToUse)
+        .order('created_at', { ascending: false });
+
+      if (collectionsError) {
+        throw collectionsError;
+      }
+
+      if (!collections || collections.length === 0) {
+        return [];
+      }
+
+      // Then get counts for each collection
+      const collectionsWithCounts = await Promise.all(
+        collections.map(async (collection) => {
+          const linkCount = await this.getCollectionLinkCount(collection.id);
+          return {
+            ...collection,
+            linkCount,
+          };
+        })
+      );
+
+      return collectionsWithCounts;
+    } catch (error) {
+      console.error('Error fetching collections with counts:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Get the count of links in a specific collection
+   */
+  static async getCollectionLinkCount(collectionId: string): Promise<number> {
+    try {
+      const { count, error } = await supabase
+        .from('collection_links')
+        .select('*', { count: 'exact', head: true })
+        .eq('collection_id', collectionId);
+
+      if (error) {
+        throw error;
+      }
+
+      return count || 0;
+    } catch (error) {
+      console.error('Error getting collection link count:', error);
+      throw error;
+    }
+  }
 }
 
 export default CollectionsService; 

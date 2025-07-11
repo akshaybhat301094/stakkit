@@ -8,6 +8,9 @@ import HomeScreen from '../screens/main/HomeScreen';
 import CollectionsScreen from '../screens/main/CollectionsScreen';
 import ProfileScreen from '../screens/main/ProfileScreen';
 import AddLinkScreen from '../screens/main/AddLinkScreen';
+import CreateCollectionScreen from '../screens/main/CreateCollectionScreen';
+import CollectionDetailScreen from '../screens/main/CollectionDetailScreen';
+import { Collection } from '../types/database';
 
 export type MainTabParamList = {
   Home: undefined;
@@ -18,6 +21,10 @@ export type MainTabParamList = {
 export type MainStackParamList = {
   MainTabs: undefined;
   AddLink: undefined;
+  CreateCollection: undefined;
+  CollectionDetail: {
+    collection: Collection & { linkCount: number };
+  };
 };
 
 const Tab = createBottomTabNavigator<MainTabParamList>();
@@ -71,6 +78,21 @@ const MainNavigator: React.FC = () => {
         component={AddLinkScreen}
         options={{
           presentation: 'modal',
+          headerShown: false,
+        }}
+      />
+      <Stack.Screen 
+        name="CreateCollection" 
+        component={CreateCollectionScreen}
+        options={{
+          presentation: 'modal',
+          headerShown: false,
+        }}
+      />
+      <Stack.Screen 
+        name="CollectionDetail" 
+        component={CollectionDetailScreen}
+        options={{
           headerShown: false,
         }}
       />
