@@ -7,6 +7,7 @@ import Icon from 'react-native-vector-icons/MaterialIcons';
 import HomeScreen from '../screens/main/HomeScreen';
 import CollectionsScreen from '../screens/main/CollectionsScreen';
 import ProfileScreen from '../screens/main/ProfileScreen';
+import AddLinkScreen from '../screens/main/AddLinkScreen';
 
 export type MainTabParamList = {
   Home: undefined;
@@ -16,6 +17,7 @@ export type MainTabParamList = {
 
 export type MainStackParamList = {
   MainTabs: undefined;
+  AddLink: undefined;
 };
 
 const Tab = createBottomTabNavigator<MainTabParamList>();
@@ -64,6 +66,14 @@ const MainNavigator: React.FC = () => {
   return (
     <Stack.Navigator screenOptions={{ headerShown: false }}>
       <Stack.Screen name="MainTabs" component={MainTabs} />
+      <Stack.Screen 
+        name="AddLink" 
+        component={AddLinkScreen}
+        options={{
+          presentation: 'modal',
+          headerShown: false,
+        }}
+      />
     </Stack.Navigator>
   );
 };
