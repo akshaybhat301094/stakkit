@@ -16,6 +16,7 @@ import Icon from 'react-native-vector-icons/MaterialIcons';
 import { MainStackParamList } from '../../navigation/MainNavigator';
 import { Link, Collection } from '../../types/database';
 import LinkCard from '../../components/LinkCard';
+import { LinksLoadingSkeleton } from '../../components/LoadingCard';
 import { LinksService } from '../../services/linksService';
 import { useAppSelector } from '../../store/hooks';
 
@@ -242,12 +243,40 @@ const CollectionDetailScreen: React.FC = () => {
           <TouchableOpacity onPress={handleBack} style={styles.backButton}>
             <Icon name="arrow-back" size={24} color="#007AFF" />
           </TouchableOpacity>
-          <Text style={styles.headerTitle}>Loading...</Text>
-          <View style={styles.headerAction} />
+          <Text style={styles.headerTitle} numberOfLines={1}>
+            {collection.name}
+          </Text>
+          <TouchableOpacity onPress={handleShareCollection} style={styles.headerAction}>
+            <Icon name="share" size={24} color="#007AFF" />
+          </TouchableOpacity>
         </View>
-        <View style={styles.loadingState}>
-          <Text style={styles.loadingText}>Loading collection links...</Text>
+
+        {/* Collection Info with Loading State */}
+        <View style={styles.collectionInfo}>
+          <View style={styles.collectionHeader}>
+            <View style={[styles.collectionIcon, { backgroundColor: getCollectionColor() }]}>
+              <Icon name={getCollectionIcon()} size={28} color="#FFFFFF" />
+            </View>
+            <View style={styles.collectionDetails}>
+              <Text style={styles.collectionName}>{collection.name}</Text>
+              <Text style={styles.collectionMeta}>
+                Loading links... • Created {formatDate(collection.created_at)}
+              </Text>
+            </View>
+          </View>
+          {collection.description && (
+            <Text style={styles.collectionDescription}>{collection.description}</Text>
+          )}
+          {collection.is_public && (
+            <View style={styles.publicBadge}>
+              <Icon name="public" size={14} color="#007AFF" />
+              <Text style={styles.publicBadgeText}>Public Collection</Text>
+            </View>
+          )}
         </View>
+        
+        <LinksLoadingSkeleton count={4} />
+        
         <TouchableOpacity style={styles.fab} onPress={handleAddLink}>
           <Icon name="add" size={24} color="#ffffff" />
         </TouchableOpacity>

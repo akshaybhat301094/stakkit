@@ -16,6 +16,7 @@ import Icon from 'react-native-vector-icons/MaterialIcons';
 import { MainStackParamList } from '../../navigation/MainNavigator';
 import { Link } from '../../types/database';
 import LinkCard from '../../components/LinkCard';
+import { LinksLoadingSkeleton } from '../../components/LoadingCard';
 import { LinksService } from '../../services/linksService';
 import { useAppSelector } from '../../store/hooks';
 
@@ -203,9 +204,22 @@ const HomeScreen: React.FC = () => {
   if (state.loading) {
     return (
       <SafeAreaView style={styles.container}>
-        <View style={styles.loadingState}>
-          <Text style={styles.loadingText}>Loading your links...</Text>
+        <View style={styles.header}>
+          <Text style={styles.headerTitle}>Your Links</Text>
+          <Text style={styles.headerSubtitle}>Loading...</Text>
         </View>
+        
+        <LinksLoadingSkeleton count={6} />
+        
+        {/* Debug Button - Temporary */}
+        <TouchableOpacity 
+          style={[styles.fab, { right: 80, backgroundColor: '#1DA1F2' }]} 
+          onPress={debugTwitterMetadata}
+        >
+          <Icon name="bug-report" size={20} color="#ffffff" />
+        </TouchableOpacity>
+
+        {/* Floating Action Button */}
         <TouchableOpacity style={styles.fab} onPress={handleAddLink}>
           <Icon name="add" size={24} color="#ffffff" />
         </TouchableOpacity>

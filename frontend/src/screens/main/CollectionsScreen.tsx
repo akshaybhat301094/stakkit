@@ -16,6 +16,7 @@ import Icon from 'react-native-vector-icons/MaterialIcons';
 import { MainStackParamList } from '../../navigation/MainNavigator';
 import { Collection } from '../../types/database';
 import CollectionCard from '../../components/CollectionCard';
+import { CollectionLoadingSkeleton } from '../../components/LoadingCard';
 import { CollectionsService } from '../../services/collectionsService';
 import { useAppSelector } from '../../store/hooks';
 
@@ -204,9 +205,22 @@ const CollectionsScreen: React.FC = () => {
   if (state.loading) {
     return (
       <SafeAreaView style={styles.container}>
-        <View style={styles.loadingState}>
-          <Text style={styles.loadingText}>Loading your collections...</Text>
+        <View style={styles.header}>
+          <Text style={styles.headerTitle}>Collections</Text>
+          <Text style={styles.headerSubtitle}>Loading...</Text>
         </View>
+        
+        <CollectionLoadingSkeleton count={4} />
+        
+        {/* Create Collection FAB - positioned differently than add link */}
+        <TouchableOpacity 
+          style={[styles.fab, { right: 80, backgroundColor: '#34C759' }]} 
+          onPress={handleCreateCollection}
+        >
+          <Icon name="create-new-folder" size={22} color="#ffffff" />
+        </TouchableOpacity>
+
+        {/* Add Link FAB */}
         <TouchableOpacity style={styles.fab} onPress={handleAddLink}>
           <Icon name="add" size={24} color="#ffffff" />
         </TouchableOpacity>
