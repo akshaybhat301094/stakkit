@@ -5,22 +5,30 @@ import {
   StyleSheet, 
   SafeAreaView, 
   TouchableOpacity, 
-  FlatList, 
+  ScrollView, 
   RefreshControl,
   Alert,
-  Share
+  Share,
+  Dimensions
 } from 'react-native';
 import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import { StackNavigationProp } from '@react-navigation/stack';
 import Icon from 'react-native-vector-icons/MaterialIcons';
 import { MainStackParamList } from '../../navigation/MainNavigator';
 import { Link } from '../../types/database';
-import LinkCard from '../../components/LinkCard';
+import ModernLinkCard from '../../components/ModernLinkCard';
 import { LinksLoadingSkeleton } from '../../components/LoadingCard';
 import { AddToCollectionModal } from '../../components/AddToCollectionModal';
 import { LinksService } from '../../services/linksService';
 import { useAppSelector } from '../../store/hooks';
-
+import { 
+  Colors, 
+  Typography, 
+  Spacing, 
+  BorderRadius, 
+  Shadows, 
+  CommonStyles 
+} from '../../components/DesignSystem';
 
 type HomeScreenNavigationProp = StackNavigationProp<MainStackParamList, 'MainTabs'>;
 
@@ -32,6 +40,8 @@ interface HomeScreenState {
   showAddToCollectionModal: boolean;
   selectedLinkForCollection: Link | null;
 }
+
+const { width: screenWidth } = Dimensions.get('window');
 
 const HomeScreen: React.FC = () => {
   const navigation = useNavigation<HomeScreenNavigationProp>();
@@ -45,8 +55,6 @@ const HomeScreen: React.FC = () => {
     selectedLinkForCollection: null,
   });
   const fetchInProgressRef = useRef(false);
-
-
 
   const fetchLinks = async (isRefreshing = false) => {
     if (fetchInProgressRef.current && !isRefreshing) {
@@ -92,15 +100,12 @@ const HomeScreen: React.FC = () => {
     }
   };
 
-  // Fetch links when screen loads
   useEffect(() => {
     fetchLinks();
   }, []);
 
-  // Refresh links when screen comes into focus (useful when returning from AddLinkScreen)
   useFocusEffect(
     useCallback(() => {
-      // Always refresh when screen comes into focus to ensure latest data
       if (!fetchInProgressRef.current) {
         fetchLinks();
       }
@@ -115,8 +120,32 @@ const HomeScreen: React.FC = () => {
     navigation.navigate('AddLink');
   };
 
+  const handleLinkPress = (link: Link) => {
+    // Open link in browser
+    import('react-native').then(({ Linking }) => {
+      Linking.openURL(link.url).catch(err => {
+        console.error('Failed to open URL:', err);
+        Alert.alert('Error', 'Could not open link');
+      });
+    });
+  };
+
+  const handleLinkLongPress = (link: Link) => {
+    // Show action sheet with options
+    Alert.alert(
+      link.title || 'Link Options',
+      'What would you like to do with this link?',
+      [
+        { text: 'Edit', onPress: () => handleEditLink(link) },
+        { text: 'Share', onPress: () => handleShareLink(link) },
+        { text: 'Add to Collection', onPress: () => handleAddToCollection(link) },
+        { text: 'Delete', onPress: () => handleDeleteLink(link), style: 'destructive' },
+        { text: 'Cancel', style: 'cancel' },
+      ]
+    );
+  };
+
   const handleEditLink = (link: Link) => {
-    // Navigate to edit link screen (to be implemented)
     Alert.alert('Coming Soon', 'Link editing will be available soon!');
   };
 
@@ -165,54 +194,96 @@ const HomeScreen: React.FC = () => {
   };
 
   const handleAddToCollectionSuccess = () => {
-    // Refresh links to show updated collection relationships
     fetchLinks(true);
   };
 
   const handleSignInAgain = () => {
-    // Navigate back to auth flow
     navigation.navigate('Auth' as any);
   };
 
-  // Temporary debug function for Twitter metadata
-  const debugTwitterMetadata = async () => {
-    console.log('🧪 Starting Twitter metadata debug...');
-    const twitterLinks = state.links.filter(link => 
-      link.url.includes('twitter.com') || link.url.includes('x.com')
-    );
+  const renderLinksGrid = () => {
+    const links = state.links;
+    const rows: React.ReactElement[] = [];
     
-    for (const link of twitterLinks) {
-      console.log('🔍 Testing Twitter link:', link.url, 'Current title:', link.title);
-      const LinkMetadataService = (await import('../../services/linkMetadataService')).default;
-      await LinkMetadataService.debugTwitterMetadata(link.url);
-      console.log('---');
+    // Simple 2-column grid layout
+    for (let i = 0; i < links.length; i += 2) {
+      const rowLinks = links.slice(i, i + 2);
+      
+      rows.push(
+        <View key={i} style={styles.gridRow}>
+          {rowLinks.map((link, index) => {
+            return (
+              <View key={link.id} style={styles.gridCard}>
+                <ModernLinkCard
+                  link={link}
+                  onPress={handleLinkPress}
+                  onLongPress={handleLinkLongPress}
+                  size="medium"
+                />
+              </View>
+            );
+          })}
+          {/* Add empty space if odd number of links */}
+          {rowLinks.length === 1 && <View style={styles.gridCard} />}
+        </View>
+      );
     }
+    
+    return rows;
   };
 
+  const renderQuickStats = () => {
+    const totalLinks = state.links.length;
+    const pinnedLinks = state.links.filter(link => link.is_pinned).length;
+    const recentLinks = state.links.filter(link => {
+      const linkDate = new Date(link.created_at);
+      const weekAgo = new Date();
+      weekAgo.setDate(weekAgo.getDate() - 7);
+      return linkDate > weekAgo;
+    }).length;
 
-  const renderLinkCard = ({ item }: { item: Link }) => (
-    <LinkCard
-      link={item}
-      onEdit={handleEditLink}
-      onDelete={handleDeleteLink}
-      onShare={handleShareLink}
-      onAddToCollection={handleAddToCollection}
-    />
-  );
+    return (
+      <View style={styles.statsContainer}>
+        <View style={styles.statCard}>
+          <Icon name="bookmark" size={24} color={Colors.primary} />
+          <Text style={styles.statNumber}>{totalLinks}</Text>
+          <Text style={styles.statLabel}>Total Links</Text>
+        </View>
+        
+        <View style={styles.statCard}>
+          <Icon name="push-pin" size={24} color={Colors.accent} />
+          <Text style={styles.statNumber}>{pinnedLinks}</Text>
+          <Text style={styles.statLabel}>Pinned</Text>
+        </View>
+        
+        <View style={styles.statCard}>
+          <Icon name="schedule" size={24} color={Colors.secondary} />
+          <Text style={styles.statNumber}>{recentLinks}</Text>
+          <Text style={styles.statLabel}>This Week</Text>
+        </View>
+      </View>
+    );
+  };
 
   const renderEmptyState = () => (
     <View style={styles.emptyState}>
-      <Icon name="bookmark-border" size={64} color="#C7C7CC" />
-      <Text style={styles.emptyTitle}>No links saved yet</Text>
+      <View style={styles.emptyIconContainer}>
+        <Icon name="bookmark-border" size={64} color={Colors.textLight} />
+      </View>
+      <Text style={styles.emptyTitle}>Start saving links</Text>
       <Text style={styles.emptyDescription}>
-        Tap the + button to save your first link
+        Save interesting articles, videos, and resources to access them later from anywhere.
       </Text>
+      <TouchableOpacity style={styles.addButton} onPress={handleAddLink}>
+        <Icon name="add" size={20} color={Colors.surface} />
+        <Text style={styles.addButtonText}>Add Your First Link</Text>
+      </TouchableOpacity>
     </View>
   );
 
   const renderErrorState = () => (
     <View style={styles.errorState}>
-      <Icon name="error-outline" size={64} color="#FF3B30" />
+      <Icon name="error-outline" size={64} color={Colors.warning} />
       <Text style={styles.errorTitle}>Unable to load links</Text>
       <Text style={styles.errorDescription}>{state.error}</Text>
       
@@ -232,23 +303,14 @@ const HomeScreen: React.FC = () => {
     return (
       <SafeAreaView style={styles.container}>
         <View style={styles.header}>
-          <Text style={styles.headerTitle}>Your Links</Text>
-          <Text style={styles.headerSubtitle}>Loading...</Text>
+          <Text style={styles.headerTitle}>My Links</Text>
+          <Text style={styles.headerSubtitle}>Loading your saved links...</Text>
         </View>
         
         <LinksLoadingSkeleton count={6} />
         
-        {/* Debug Button - Temporary */}
-        <TouchableOpacity 
-          style={[styles.fab, { right: 80, backgroundColor: '#1DA1F2' }]} 
-          onPress={debugTwitterMetadata}
-        >
-          <Icon name="bug-report" size={20} color="#ffffff" />
-        </TouchableOpacity>
-
-        {/* Floating Action Button */}
         <TouchableOpacity style={styles.fab} onPress={handleAddLink}>
-          <Icon name="add" size={24} color="#ffffff" />
+          <Icon name="add" size={24} color={Colors.surface} />
         </TouchableOpacity>
       </SafeAreaView>
     );
@@ -256,48 +318,59 @@ const HomeScreen: React.FC = () => {
 
   return (
     <SafeAreaView style={styles.container}>
+      {/* Header */}
       <View style={styles.header}>
-        <Text style={styles.headerTitle}>Your Links</Text>
-        <Text style={styles.headerSubtitle}>
-          {state.links.length} {state.links.length === 1 ? 'link' : 'links'} saved
-        </Text>
+        <View>
+          <Text style={styles.headerTitle}>My Links</Text>
+          <Text style={styles.headerSubtitle}>
+            {state.links.length} {state.links.length === 1 ? 'link' : 'links'} saved
+          </Text>
+        </View>
+        
+        <TouchableOpacity style={styles.headerButton} onPress={handleAddLink}>
+          <Icon name="add" size={24} color={Colors.primary} />
+        </TouchableOpacity>
       </View>
 
+      {/* Content */}
       {state.error ? (
         renderErrorState()
       ) : (
-        <FlatList
-          data={state.links}
-          renderItem={renderLinkCard}
-          keyExtractor={(item) => item.id}
+        <ScrollView
+          style={styles.scrollView}
           contentContainerStyle={[
-            styles.listContainer,
-            state.links.length === 0 && styles.emptyListContainer
+            styles.scrollContent,
+            state.links.length === 0 && styles.emptyScrollContent
           ]}
-          ListEmptyComponent={renderEmptyState}
           refreshControl={
             <RefreshControl
               refreshing={state.refreshing}
               onRefresh={handleRefresh}
-              colors={['#007AFF']}
-              tintColor="#007AFF"
+              colors={[Colors.primary]}
+              tintColor={Colors.primary}
             />
           }
           showsVerticalScrollIndicator={false}
-        />
+        >
+          {state.links.length === 0 ? (
+            renderEmptyState()
+          ) : (
+            <>
+              {/* Quick Stats */}
+              {renderQuickStats()}
+              
+              {/* Links Grid */}
+              <View style={styles.gridContainer}>
+                {renderLinksGrid()}
+              </View>
+            </>
+          )}
+        </ScrollView>
       )}
-      
-      {/* Debug Button - Temporary */}
-      <TouchableOpacity 
-        style={[styles.fab, { right: 80, backgroundColor: '#1DA1F2' }]} 
-        onPress={debugTwitterMetadata}
-      >
-        <Icon name="bug-report" size={20} color="#ffffff" />
-      </TouchableOpacity>
 
       {/* Floating Action Button */}
       <TouchableOpacity style={styles.fab} onPress={handleAddLink}>
-        <Icon name="add" size={24} color="#ffffff" />
+        <Icon name="add" size={24} color={Colors.surface} />
       </TouchableOpacity>
 
       {/* Add to Collection Modal */}
@@ -315,124 +388,173 @@ const HomeScreen: React.FC = () => {
 
 const styles = StyleSheet.create({
   container: {
-    flex: 1,
-    backgroundColor: '#F2F2F7',
+    ...CommonStyles.container,
   },
   header: {
-    backgroundColor: '#FFFFFF',
-    paddingHorizontal: 20,
-    paddingTop: 16,
-    paddingBottom: 12,
+    backgroundColor: Colors.surface,
+    paddingHorizontal: Spacing.lg,
+    paddingTop: Spacing.md,
+    paddingBottom: Spacing.md,
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
     borderBottomWidth: 1,
-    borderBottomColor: '#E5E5EA',
+    borderBottomColor: Colors.surfaceSecondary,
   },
   headerTitle: {
+    ...Typography.h1,
     fontSize: 28,
-    fontWeight: 'bold',
-    color: '#1C1C1E',
-    marginBottom: 4,
+    marginBottom: Spacing.xs,
   },
   headerSubtitle: {
-    fontSize: 15,
-    color: '#8E8E93',
+    ...Typography.caption,
+    color: Colors.textTertiary,
   },
-  listContainer: {
-    paddingTop: 16,
-    paddingBottom: 100, // Space for FAB
-  },
-  emptyListContainer: {
-    flex: 1,
-    justifyContent: 'center',
-  },
-  loadingState: {
-    flex: 1,
+  headerButton: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: Colors.surfaceSecondary,
     justifyContent: 'center',
     alignItems: 'center',
   },
-  loadingText: {
-    fontSize: 16,
-    color: '#8E8E93',
-    marginTop: 16,
+  scrollView: {
+    flex: 1,
+  },
+  scrollContent: {
+    paddingTop: Spacing.lg,
+    paddingBottom: 120, // Increased from 100 to match CollectionDetailScreen
+  },
+  emptyScrollContent: {
+    flex: 1,
+    justifyContent: 'center',
+  },
+  statsContainer: {
+    flexDirection: 'row',
+    paddingHorizontal: Spacing.lg, // Changed from Spacing.md to match grid container
+    marginBottom: Spacing.xl, // Increased from Spacing.lg for better separation
+  },
+  statCard: {
+    flex: 1,
+    backgroundColor: Colors.surface,
+    borderRadius: BorderRadius.md,
+    padding: Spacing.md,
+    alignItems: 'center',
+    marginHorizontal: Spacing.xs,
+    ...Shadows.small,
+  },
+  statNumber: {
+    ...Typography.h2,
+    fontSize: 20,
+    marginTop: Spacing.xs,
+    marginBottom: Spacing.xs,
+  },
+  statLabel: {
+    ...Typography.labelSmall,
+    color: Colors.textTertiary,
+  },
+  gridContainer: {
+    paddingHorizontal: Spacing.lg, // Changed from Spacing.md to match CollectionDetailScreen
+  },
+  gridRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginBottom: Spacing.lg, // Changed from Spacing.md to match CollectionDetailScreen
+    paddingHorizontal: 0, // Removed horizontal padding like CollectionDetailScreen
+  },
+  gridCard: {
+    width: (screenWidth - (Spacing.lg * 2) - Spacing.md) / 2, // Updated to match CollectionDetailScreen calculation
   },
   emptyState: {
     alignItems: 'center',
-    paddingHorizontal: 40,
+    paddingHorizontal: Spacing.xl,
+    paddingVertical: Spacing.xxl,
+  },
+  emptyIconContainer: {
+    width: 120,
+    height: 120,
+    borderRadius: 60,
+    backgroundColor: Colors.surfaceSecondary,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: Spacing.lg,
   },
   emptyTitle: {
-    fontSize: 20,
-    fontWeight: '600',
-    color: '#1C1C1E',
-    marginTop: 16,
-    marginBottom: 8,
+    ...Typography.h2,
+    marginBottom: Spacing.sm,
   },
   emptyDescription: {
-    fontSize: 15,
-    color: '#8E8E93',
+    ...Typography.body,
     textAlign: 'center',
-    lineHeight: 21,
+    marginBottom: Spacing.xl,
+    lineHeight: 24,
+  },
+  addButton: {
+    backgroundColor: Colors.primary,
+    paddingHorizontal: Spacing.lg,
+    paddingVertical: Spacing.md,
+    borderRadius: BorderRadius.md,
+    flexDirection: 'row',
+    alignItems: 'center',
+    ...Shadows.small,
+  },
+  addButtonText: {
+    color: Colors.surface,
+    fontSize: 16,
+    fontWeight: '600',
+    marginLeft: Spacing.sm,
   },
   errorState: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    paddingHorizontal: 40,
+    paddingHorizontal: Spacing.xl,
   },
   errorTitle: {
-    fontSize: 20,
-    fontWeight: '600',
-    color: '#1C1C1E',
-    marginTop: 16,
-    marginBottom: 8,
+    ...Typography.h3,
+    marginTop: Spacing.md,
+    marginBottom: Spacing.sm,
   },
   errorDescription: {
-    fontSize: 15,
-    color: '#8E8E93',
+    ...Typography.body,
     textAlign: 'center',
-    lineHeight: 21,
-    marginBottom: 24,
+    marginBottom: Spacing.lg,
   },
-
   retryButton: {
-    backgroundColor: '#007AFF',
-    paddingHorizontal: 24,
-    paddingVertical: 12,
-    borderRadius: 8,
-    marginBottom: 12,
+    backgroundColor: Colors.primary,
+    paddingHorizontal: Spacing.lg,
+    paddingVertical: Spacing.md,
+    borderRadius: BorderRadius.md,
+    marginBottom: Spacing.md,
   },
   retryButtonText: {
-    color: '#FFFFFF',
+    color: Colors.surface,
     fontSize: 16,
     fontWeight: '600',
   },
   signInButton: {
-    backgroundColor: '#FF3B30',
-    paddingHorizontal: 24,
-    paddingVertical: 12,
-    borderRadius: 8,
+    backgroundColor: Colors.warning,
+    paddingHorizontal: Spacing.lg,
+    paddingVertical: Spacing.md,
+    borderRadius: BorderRadius.md,
   },
   signInButtonText: {
-    color: '#FFFFFF',
+    color: Colors.surface,
     fontSize: 16,
     fontWeight: '600',
   },
   fab: {
     position: 'absolute',
-    bottom: 30,
-    right: 20,
+    bottom: 40, // Increased from 30 to match CollectionDetailScreen
+    right: 24, // Increased from 20 to match CollectionDetailScreen
     width: 56,
     height: 56,
     borderRadius: 28,
-    backgroundColor: '#007AFF',
+    backgroundColor: Colors.primary,
     justifyContent: 'center',
     alignItems: 'center',
-    elevation: 8,
-    shadowColor: '#000',
-    shadowOffset: {
-      width: 0,
-      height: 4,
-    },
-    shadowOpacity: 0.25,
-    shadowRadius: 5,
+    ...Shadows.large,
+    elevation: 8, // Added elevation for Android consistency
   },
 });
 

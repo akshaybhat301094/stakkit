@@ -5,20 +5,29 @@ import {
   StyleSheet, 
   SafeAreaView, 
   TouchableOpacity, 
-  FlatList, 
+  ScrollView, 
   RefreshControl,
   Alert,
-  Share
+  Share,
+  Dimensions
 } from 'react-native';
 import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import { StackNavigationProp } from '@react-navigation/stack';
 import Icon from 'react-native-vector-icons/MaterialIcons';
 import { MainStackParamList } from '../../navigation/MainNavigator';
 import { Collection } from '../../types/database';
-import CollectionCard from '../../components/CollectionCard';
+import ModernCollectionCard from '../../components/ModernCollectionCard';
 import { CollectionLoadingSkeleton } from '../../components/LoadingCard';
 import { CollectionsService } from '../../services/collectionsService';
 import { useAppSelector } from '../../store/hooks';
+import { 
+  Colors, 
+  Typography, 
+  Spacing, 
+  BorderRadius, 
+  Shadows, 
+  CommonStyles 
+} from '../../components/DesignSystem';
 
 type CollectionsScreenNavigationProp = StackNavigationProp<MainStackParamList, 'MainTabs'>;
 
@@ -28,6 +37,8 @@ interface CollectionsScreenState {
   refreshing: boolean;
   error: string | null;
 }
+
+const { width: screenWidth } = Dimensions.get('window');
 
 const CollectionsScreen: React.FC = () => {
   const navigation = useNavigation<CollectionsScreenNavigationProp>();
@@ -84,15 +95,12 @@ const CollectionsScreen: React.FC = () => {
     }
   };
 
-  // Fetch collections when screen loads
   useEffect(() => {
     fetchCollections();
   }, []);
 
-  // Refresh collections when screen comes into focus
   useFocusEffect(
     useCallback(() => {
-      // Always refresh when screen comes into focus to ensure latest data
       if (!fetchInProgressRef.current) {
         fetchCollections();
       }
@@ -112,7 +120,6 @@ const CollectionsScreen: React.FC = () => {
   };
 
   const handleCollectionPress = (collection: Collection) => {
-    // Find the collection with linkCount from our state
     const collectionWithCount = state.collections.find(c => c.id === collection.id);
     if (collectionWithCount) {
       navigation.navigate('CollectionDetail', { collection: collectionWithCount });
@@ -139,7 +146,6 @@ const CollectionsScreen: React.FC = () => {
 
   const handleShareCollection = async (collection: Collection) => {
     try {
-      // Find the collection with linkCount from our state
       const collectionWithCount = state.collections.find(c => c.id === collection.id);
       const linkCount = collectionWithCount?.linkCount || 0;
       
@@ -156,29 +162,53 @@ const CollectionsScreen: React.FC = () => {
   };
 
   const handleSignInAgain = () => {
-    // Navigate back to auth flow
     navigation.navigate('Auth' as any);
   };
 
-  const renderCollectionCard = ({ item }: { item: Collection & { linkCount: number } }) => (
-    <CollectionCard
-      collection={item}
-      onPress={handleCollectionPress}
-      onEdit={handleEditCollection}
-      onDelete={handleDeleteCollection}
-      onShare={handleShareCollection}
-    />
-  );
+  const renderCollectionGrid = () => {
+    const collections = state.collections;
+    const rows: React.ReactElement[] = [];
+    
+    // Simple 2-column grid layout like in the screenshot
+    for (let i = 0; i < collections.length; i += 2) {
+      const rowCollections = collections.slice(i, i + 2);
+      
+      rows.push(
+        <View key={i} style={styles.gridRow}>
+          {rowCollections.map((collection, index) => {
+            const globalIndex = i + index;
+            
+            return (
+              <View key={collection.id} style={styles.gridCard}>
+                <ModernCollectionCard
+                  collection={collection}
+                  onPress={handleCollectionPress}
+                  size="medium"
+                  index={globalIndex}
+                />
+              </View>
+            );
+          })}
+          {/* Add empty space if odd number of collections */}
+          {rowCollections.length === 1 && <View style={styles.gridCard} />}
+        </View>
+      );
+    }
+    
+    return rows;
+  };
 
   const renderEmptyState = () => (
     <View style={styles.emptyState}>
-      <Icon name="folder-open" size={64} color="#C7C7CC" />
-      <Text style={styles.emptyTitle}>No collections yet</Text>
+      <View style={styles.emptyIconContainer}>
+        <Icon name="folder-open" size={64} color={Colors.textLight} />
+      </View>
+      <Text style={styles.emptyTitle}>Start organizing</Text>
       <Text style={styles.emptyDescription}>
-        Create your first collection to organize your saved links
+        Create collections to organize your saved links by topic, project, or any way you like.
       </Text>
       <TouchableOpacity style={styles.createButton} onPress={handleCreateCollection}>
-        <Icon name="add" size={20} color="#FFFFFF" />
+        <Icon name="add" size={20} color={Colors.surface} />
         <Text style={styles.createButtonText}>Create Collection</Text>
       </TouchableOpacity>
     </View>
@@ -186,7 +216,7 @@ const CollectionsScreen: React.FC = () => {
 
   const renderErrorState = () => (
     <View style={styles.errorState}>
-      <Icon name="error-outline" size={64} color="#FF3B30" />
+      <Icon name="error-outline" size={64} color={Colors.warning} />
       <Text style={styles.errorTitle}>Unable to load collections</Text>
       <Text style={styles.errorDescription}>{state.error}</Text>
       
@@ -207,22 +237,13 @@ const CollectionsScreen: React.FC = () => {
       <SafeAreaView style={styles.container}>
         <View style={styles.header}>
           <Text style={styles.headerTitle}>Collections</Text>
-          <Text style={styles.headerSubtitle}>Loading...</Text>
+          <Text style={styles.headerSubtitle}>Loading your collections...</Text>
         </View>
         
         <CollectionLoadingSkeleton count={4} />
         
-        {/* Create Collection FAB - positioned differently than add link */}
-        <TouchableOpacity 
-          style={[styles.fab, { right: 80, backgroundColor: '#34C759' }]} 
-          onPress={handleCreateCollection}
-        >
-          <Icon name="create-new-folder" size={22} color="#ffffff" />
-        </TouchableOpacity>
-
-        {/* Add Link FAB */}
         <TouchableOpacity style={styles.fab} onPress={handleAddLink}>
-          <Icon name="add" size={24} color="#ffffff" />
+          <Icon name="add" size={24} color={Colors.surface} />
         </TouchableOpacity>
       </SafeAreaView>
     );
@@ -230,48 +251,53 @@ const CollectionsScreen: React.FC = () => {
 
   return (
     <SafeAreaView style={styles.container}>
+      {/* Header */}
       <View style={styles.header}>
-        <Text style={styles.headerTitle}>Collections</Text>
-        <Text style={styles.headerSubtitle}>
-          {state.collections.length} {state.collections.length === 1 ? 'collection' : 'collections'}
-        </Text>
+        <View>
+          <Text style={styles.headerTitle}>Collections</Text>
+          <Text style={styles.headerSubtitle}>
+            {state.collections.length} {state.collections.length === 1 ? 'collection' : 'collections'}
+          </Text>
+        </View>
+        
+        <TouchableOpacity style={styles.headerButton} onPress={handleCreateCollection}>
+          <Icon name="create-new-folder" size={24} color={Colors.primary} />
+        </TouchableOpacity>
       </View>
 
+      {/* Content */}
       {state.error ? (
         renderErrorState()
       ) : (
-        <FlatList
-          data={state.collections}
-          renderItem={renderCollectionCard}
-          keyExtractor={(item) => item.id}
+        <ScrollView
+          style={styles.scrollView}
           contentContainerStyle={[
-            styles.listContainer,
-            state.collections.length === 0 && styles.emptyListContainer
+            styles.scrollContent,
+            state.collections.length === 0 && styles.emptyScrollContent
           ]}
-          ListEmptyComponent={renderEmptyState}
           refreshControl={
             <RefreshControl
               refreshing={state.refreshing}
               onRefresh={handleRefresh}
-              colors={['#007AFF']}
-              tintColor="#007AFF"
+              colors={[Colors.primary]}
+              tintColor={Colors.primary}
             />
           }
           showsVerticalScrollIndicator={false}
-        />
+        >
+          {state.collections.length === 0 ? (
+            renderEmptyState()
+          ) : (
+            <View style={styles.gridContainer}>
+              {renderCollectionGrid()}
+            </View>
+          )}
+        </ScrollView>
       )}
-      
-      {/* Create Collection FAB - positioned differently than add link */}
-      <TouchableOpacity 
-        style={[styles.fab, { right: 80, backgroundColor: '#34C759' }]} 
-        onPress={handleCreateCollection}
-      >
-        <Icon name="create-new-folder" size={22} color="#ffffff" />
-      </TouchableOpacity>
 
-      {/* Add Link FAB */}
+      {/* Floating Action Button */}
       <TouchableOpacity style={styles.fab} onPress={handleAddLink}>
-        <Icon name="add" size={24} color="#ffffff" />
+        <Icon name="add" size={24} color={Colors.surface} />
       </TouchableOpacity>
     </SafeAreaView>
   );
@@ -279,117 +305,134 @@ const CollectionsScreen: React.FC = () => {
 
 const styles = StyleSheet.create({
   container: {
-    flex: 1,
-    backgroundColor: '#F2F2F7',
+    ...CommonStyles.container,
   },
   header: {
-    backgroundColor: '#FFFFFF',
-    paddingHorizontal: 20,
-    paddingTop: 16,
-    paddingBottom: 12,
+    backgroundColor: Colors.surface,
+    paddingHorizontal: Spacing.lg,
+    paddingTop: Spacing.md,
+    paddingBottom: Spacing.md,
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
     borderBottomWidth: 1,
-    borderBottomColor: '#E5E5EA',
+    borderBottomColor: Colors.surfaceSecondary,
   },
   headerTitle: {
+    ...Typography.h1,
     fontSize: 28,
-    fontWeight: 'bold',
-    color: '#1C1C1E',
-    marginBottom: 4,
+    marginBottom: Spacing.xs,
   },
   headerSubtitle: {
-    fontSize: 15,
-    color: '#8E8E93',
+    ...Typography.caption,
+    color: Colors.textTertiary,
   },
-  listContainer: {
-    paddingTop: 16,
-    paddingBottom: 100, // Space for FABs
-  },
-  emptyListContainer: {
-    flex: 1,
-    justifyContent: 'center',
-  },
-  loadingState: {
-    flex: 1,
+  headerButton: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: Colors.surfaceSecondary,
     justifyContent: 'center',
     alignItems: 'center',
   },
-  loadingText: {
-    fontSize: 16,
-    color: '#8E8E93',
-    marginTop: 16,
+  scrollView: {
+    flex: 1,
+  },
+  scrollContent: {
+    paddingTop: Spacing.lg,
+    paddingBottom: 100, // Space for FAB
+  },
+  emptyScrollContent: {
+    flex: 1,
+    justifyContent: 'center',
+  },
+  gridContainer: {
+    paddingHorizontal: Spacing.md,
+  },
+  gridRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginBottom: Spacing.md,
+  },
+  gridCard: {
+    width: (screenWidth - (Spacing.md * 2)) / 2, // For 2-column grid
+    paddingHorizontal: Spacing.sm / 2, // Add gap between cards
   },
   emptyState: {
     alignItems: 'center',
-    paddingHorizontal: 40,
+    paddingHorizontal: Spacing.xl,
+    paddingVertical: Spacing.xxl,
+  },
+  emptyIconContainer: {
+    width: 120,
+    height: 120,
+    borderRadius: 60,
+    backgroundColor: Colors.surfaceSecondary,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: Spacing.lg,
   },
   emptyTitle: {
-    fontSize: 20,
-    fontWeight: '600',
-    color: '#1C1C1E',
-    marginTop: 16,
-    marginBottom: 8,
+    ...Typography.h2,
+    marginBottom: Spacing.sm,
   },
   emptyDescription: {
-    fontSize: 15,
-    color: '#8E8E93',
+    ...Typography.body,
     textAlign: 'center',
-    lineHeight: 21,
-    marginBottom: 24,
+    marginBottom: Spacing.xl,
+    lineHeight: 24,
   },
   createButton: {
+    backgroundColor: Colors.primary,
+    paddingHorizontal: Spacing.lg,
+    paddingVertical: Spacing.md,
+    borderRadius: BorderRadius.md,
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#34C759',
-    paddingHorizontal: 20,
-    paddingVertical: 12,
-    borderRadius: 8,
+    ...Shadows.small,
   },
   createButtonText: {
-    color: '#FFFFFF',
+    color: Colors.surface,
     fontSize: 16,
     fontWeight: '600',
-    marginLeft: 6,
+    marginLeft: Spacing.sm,
   },
   errorState: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    paddingHorizontal: 40,
+    paddingHorizontal: Spacing.xl,
   },
   errorTitle: {
-    fontSize: 20,
-    fontWeight: '600',
-    color: '#1C1C1E',
-    marginTop: 16,
-    marginBottom: 8,
+    ...Typography.h3,
+    marginTop: Spacing.md,
+    marginBottom: Spacing.sm,
   },
   errorDescription: {
-    fontSize: 15,
-    color: '#8E8E93',
+    ...Typography.body,
     textAlign: 'center',
-    lineHeight: 21,
-    marginBottom: 24,
+    marginBottom: Spacing.lg,
   },
   retryButton: {
-    backgroundColor: '#007AFF',
-    paddingHorizontal: 24,
-    paddingVertical: 12,
-    borderRadius: 8,
-    marginBottom: 12,
+    backgroundColor: Colors.primary,
+    paddingHorizontal: Spacing.lg,
+    paddingVertical: Spacing.md,
+    borderRadius: BorderRadius.md,
+    marginBottom: Spacing.md,
   },
   retryButtonText: {
-    color: '#FFFFFF',
+    color: Colors.surface,
     fontSize: 16,
     fontWeight: '600',
   },
   signInButton: {
-    backgroundColor: '#FF3B30',
-    paddingHorizontal: 24,
-    paddingVertical: 12,
-    borderRadius: 8,
+    backgroundColor: Colors.warning,
+    paddingHorizontal: Spacing.lg,
+    paddingVertical: Spacing.md,
+    borderRadius: BorderRadius.md,
   },
   signInButtonText: {
-    color: '#FFFFFF',
+    color: Colors.surface,
     fontSize: 16,
     fontWeight: '600',
   },
@@ -400,17 +443,10 @@ const styles = StyleSheet.create({
     width: 56,
     height: 56,
     borderRadius: 28,
-    backgroundColor: '#007AFF',
+    backgroundColor: Colors.primary,
     justifyContent: 'center',
     alignItems: 'center',
-    elevation: 8,
-    shadowColor: '#000',
-    shadowOffset: {
-      width: 0,
-      height: 4,
-    },
-    shadowOpacity: 0.25,
-    shadowRadius: 5,
+    ...Shadows.large,
   },
 });
 
