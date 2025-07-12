@@ -12,10 +12,11 @@ import {
   KeyboardAvoidingView,
   Platform,
 } from 'react-native';
-import { useNavigation } from '@react-navigation/native';
+import { useNavigation, useRoute } from '@react-navigation/native';
 import * as Clipboard from 'expo-clipboard';
 import Icon from 'react-native-vector-icons/MaterialIcons';
 import { useAppSelector } from '../../store/hooks';
+import { MainStackParamList } from '../../navigation/MainNavigator';
 
 // Import services and utilities
 import { validateURL, extractURLsFromText, getDomainFromURL } from '../../utils/urlValidation';
@@ -30,6 +31,8 @@ interface AddLinkScreenProps {}
 
 const AddLinkScreen: React.FC<AddLinkScreenProps> = () => {
   const navigation = useNavigation();
+  const route = useRoute();
+  const { selectedCollectionId: paramCollectionId } = (route.params as MainStackParamList['AddLink']) || {};
   const { user, isAuthenticated } = useAppSelector((state) => state.auth);
   
   // Form state
@@ -84,8 +87,13 @@ const AddLinkScreen: React.FC<AddLinkScreenProps> = () => {
       console.log('Loaded collections:', userCollections.length);
       setCollections(userCollections);
       
-      // Auto-select first collection or create default
-      if (userCollections.length > 0) {
+      // Auto-select collection: prioritize passed parameter, then first collection, then create default
+      if (paramCollectionId && userCollections.find(c => c.id === paramCollectionId)) {
+        // Use the passed collection ID if it exists in user's collections
+        console.log('Pre-selecting collection from parameter:', paramCollectionId);
+        setSelectedCollectionId(paramCollectionId);
+      } else if (userCollections.length > 0) {
+        // Fallback to first collection
         setSelectedCollectionId(userCollections[0].id);
       } else {
         console.log('No collections found, creating default...');

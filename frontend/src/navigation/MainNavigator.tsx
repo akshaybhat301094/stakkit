@@ -8,16 +8,25 @@ import HomeScreen from '../screens/main/HomeScreen';
 import CollectionsScreen from '../screens/main/CollectionsScreen';
 import ProfileScreen from '../screens/main/ProfileScreen';
 import AddLinkScreen from '../screens/main/AddLinkScreen';
+import CreateCollectionScreen from '../screens/main/CreateCollectionScreen';
+import CollectionDetailScreen from '../screens/main/CollectionDetailScreen';
+import { Collection } from '../types/database';
 
 export type MainTabParamList = {
-  Home: undefined;
   Collections: undefined;
+  Home: undefined;
   Profile: undefined;
 };
 
 export type MainStackParamList = {
   MainTabs: undefined;
-  AddLink: undefined;
+  AddLink: {
+    selectedCollectionId?: string;
+  } | undefined;
+  CreateCollection: undefined;
+  CollectionDetail: {
+    collection: Collection & { linkCount: number };
+  };
 };
 
 const Tab = createBottomTabNavigator<MainTabParamList>();
@@ -30,10 +39,10 @@ const MainTabs: React.FC = () => {
         tabBarIcon: ({ focused, color, size }) => {
           let iconName: string;
 
-          if (route.name === 'Home') {
-            iconName = focused ? 'home' : 'home';
-          } else if (route.name === 'Collections') {
+          if (route.name === 'Collections') {
             iconName = focused ? 'folder' : 'folder-open';
+          } else if (route.name === 'Home') {
+            iconName = focused ? 'home' : 'home';
           } else if (route.name === 'Profile') {
             iconName = focused ? 'person' : 'person-outline';
           } else {
@@ -55,9 +64,21 @@ const MainTabs: React.FC = () => {
         },
       })}
     >
-      <Tab.Screen name="Home" component={HomeScreen} />
-      <Tab.Screen name="Collections" component={CollectionsScreen} />
-      <Tab.Screen name="Profile" component={ProfileScreen} />
+      <Tab.Screen 
+        name="Collections" 
+        component={CollectionsScreen}
+        options={{ title: 'Collections' }}
+      />
+      <Tab.Screen 
+        name="Home" 
+        component={HomeScreen}
+        options={{ title: 'All Links' }}
+      />
+      <Tab.Screen 
+        name="Profile" 
+        component={ProfileScreen}
+        options={{ title: 'Profile' }}
+      />
     </Tab.Navigator>
   );
 };
@@ -71,6 +92,21 @@ const MainNavigator: React.FC = () => {
         component={AddLinkScreen}
         options={{
           presentation: 'modal',
+          headerShown: false,
+        }}
+      />
+      <Stack.Screen 
+        name="CreateCollection" 
+        component={CreateCollectionScreen}
+        options={{
+          presentation: 'modal',
+          headerShown: false,
+        }}
+      />
+      <Stack.Screen 
+        name="CollectionDetail" 
+        component={CollectionDetailScreen}
+        options={{
           headerShown: false,
         }}
       />
