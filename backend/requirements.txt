@@ -1,3 +1,5 @@
 fastapi
 uvicorn
-pydantic 
+pydantic
+python-dotenv  # for environment variables
+requests       # for making HTTP requests

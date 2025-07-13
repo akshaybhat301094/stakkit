@@ -15,7 +15,8 @@
     "lint:fix": "eslint . --ext .ts,.tsx --fix",
     "format": "prettier --write .",
     "type-check": "tsc --noEmit",
-    "test": "jest"
+    "test": "jest",
+    "generate-types": "supabase gen types typescript --project-id <your-project-id> --output-file ../types/supabase.ts"
   },
   "repository": {
     "type": "git",

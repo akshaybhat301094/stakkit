@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React from 'react';
 import {
   View,
   Text,
@@ -17,32 +17,6 @@ const ProfileScreen: React.FC = () => {
   const dispatch = useAppDispatch();
   const { user } = useAppSelector((state) => state.auth);
   const [signOut, { isLoading }] = useSignOutMutation();
-  const [userInfo, setUserInfo] = useState<any>(null);
-  const [userInfoLoading, setUserInfoLoading] = useState(false);
-  const [userInfoError, setUserInfoError] = useState<string | null>(null);
-
-  useEffect(() => {
-    const fetchUserInfo = async () => {
-      setUserInfoLoading(true);
-      setUserInfoError(null);
-      try {
-        const session = await supabase.auth.getSession();
-        const token = session.data.session?.access_token;
-        if (!token) throw new Error('No JWT token found');
-        const res = await fetch('http://localhost:8000/auth/userinfo', {
-          headers: { Authorization: `Bearer ${token}` },
-        });
-        if (!res.ok) throw new Error('Failed to fetch user info');
-        const data = await res.json();
-        setUserInfo(data.user);
-      } catch (err: any) {
-        setUserInfoError(err.message || 'Unknown error');
-      } finally {
-        setUserInfoLoading(false);
-      }
-    };
-    fetchUserInfo();
-  }, []);
 
   const handleLogout = () => {
     Alert.alert(
@@ -69,17 +43,15 @@ const ProfileScreen: React.FC = () => {
       <View style={styles.content}>
         <View style={styles.header}>
           <Text style={styles.title}>Profile</Text>
-          {userInfoLoading ? (
-            <ActivityIndicator color="#007AFF" />
-          ) : userInfoError ? (
-            <Text style={{ color: 'red' }}>{userInfoError}</Text>
-          ) : userInfo ? (
-            <View style={styles.userInfo}>
-              <Text style={styles.email}>{userInfo.email}</Text>
-              {userInfo.name && <Text style={styles.name}>{userInfo.name}</Text>}
-              <Text style={{ fontSize: 12, color: '#8E8E93', marginTop: 8 }}>User ID: {userInfo.sub}</Text>
-            </View>
-          ) : null}
+          <View style={styles.userInfo}>
+            <Text style={styles.email}>{user?.email}</Text>
+            {user?.user_metadata?.full_name && (
+              <Text style={styles.name}>{user.user_metadata.full_name}</Text>
+            )}
+            <Text style={{ fontSize: 12, color: '#8E8E93', marginTop: 8 }}>
+              User ID: {user?.id}
+            </Text>
+          </View>
         </View>
 
         <View style={styles.section}>
