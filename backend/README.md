@@ -1,4 +1,4 @@
-# Python Backend for Auth Verification
+# Python Backend
 
 ## Setup
 
@@ -13,9 +13,7 @@
    pip install -r requirements.txt
    ```
 
-3. Update `SUPABASE_PROJECT_ID` in `app/utils/jwt_verifier.py` with your actual Supabase project ref.
-
-4. Run the FastAPI server from the project root:
+3. Run the FastAPI server from the project root:
    ```sh
    uvicorn main:app --reload
    ```
@@ -25,19 +23,10 @@
 - `main.py` — Entrypoint for Uvicorn
 - `app/` — Main application package
   - `main.py` — FastAPI app instance
-  - `routes/` — Route modules (e.g., `auth.py`)
+  - `routes/` — Route modules
   - `models/` — Pydantic models
-  - `utils/` — Utility functions (e.g., JWT verification)
+  - `utils/` — Utility functions
 
-## Endpoint
+## Authentication
 
-### POST /auth/verify
-- Accepts: `{ "token": "<JWT token>" }`
-- Returns: `{ "valid": true, "user": { ...jwt claims... } }` if valid, or 401 if invalid.
-
-## Example Request
-```sh
-curl -X POST ihttp://localhost:8000/auth/verify \
-  -H "Content-Type: application/json" \
-  -d '{"token": "<your-jwt-token>"}'
-``` 
+Authentication is handled entirely by Supabase in the frontend. This backend service does not handle any authentication or JWT verification. 
