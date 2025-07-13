@@ -11,11 +11,11 @@ import {
   Share,
   Dimensions
 } from 'react-native';
-import { useNavigation, useFocusEffect } from '@react-navigation/native';
+import { useNavigation, useRoute, useFocusEffect } from '@react-navigation/native';
 import { StackNavigationProp } from '@react-navigation/stack';
 import Icon from 'react-native-vector-icons/MaterialIcons';
 import { MainStackParamList } from '../../navigation/MainNavigator';
-import { Link } from '../../types/database';
+import { Link, Collection } from '../../types/database';
 import ModernLinkCard from '../../components/ModernLinkCard';
 import { LinksLoadingSkeleton } from '../../components/LoadingCard';
 import { AddToCollectionModal } from '../../components/AddToCollectionModal';
@@ -27,12 +27,17 @@ import {
   Spacing, 
   BorderRadius, 
   Shadows, 
+  getCollectionColor,
   CommonStyles 
 } from '../../components/DesignSystem';
 
-type HomeScreenNavigationProp = StackNavigationProp<MainStackParamList, 'MainTabs'>;
+type CollectionDetailScreenNavigationProp = StackNavigationProp<MainStackParamList, 'CollectionDetail'>;
 
-interface HomeScreenState {
+interface CollectionDetailRouteParams {
+  collection: Collection & { linkCount: number };
+}
+
+interface CollectionDetailScreenState {
   links: Link[];
   loading: boolean;
   refreshing: boolean;
@@ -43,10 +48,12 @@ interface HomeScreenState {
 
 const { width: screenWidth } = Dimensions.get('window');
 
-const HomeScreen: React.FC = () => {
-  const navigation = useNavigation<HomeScreenNavigationProp>();
+const CollectionDetailScreen: React.FC = () => {
+  const navigation = useNavigation<CollectionDetailScreenNavigationProp>();
+  const route = useRoute();
+  const { collection } = route.params as CollectionDetailRouteParams;
   const { isAuthenticated, user, session } = useAppSelector((state) => state.auth);
-  const [state, setState] = useState<HomeScreenState>({
+  const [state, setState] = useState<CollectionDetailScreenState>({
     links: [],
     loading: true,
     refreshing: false,
@@ -56,7 +63,7 @@ const HomeScreen: React.FC = () => {
   });
   const fetchInProgressRef = useRef(false);
 
-  const fetchLinks = async (isRefreshing = false) => {
+  const fetchCollectionLinks = async (isRefreshing = false) => {
     if (fetchInProgressRef.current && !isRefreshing) {
       return;
     }
@@ -71,16 +78,16 @@ const HomeScreen: React.FC = () => {
         error: null 
       }));
 
-      const userLinks = await LinksService.getUserLinks();
+      const collectionLinks = await LinksService.getLinksInCollection(collection.id);
       
       setState(prev => ({ 
         ...prev, 
-        links: userLinks, 
+        links: collectionLinks, 
         loading: false, 
         refreshing: false 
       }));
     } catch (error: any) {
-      console.error('Error fetching links:', error);
+      console.error('Error fetching collection links:', error);
       let errorMessage = 'Failed to load links. Please try again.';
       
       if (error.message.includes('User not authenticated') || error.message.includes('Authentication failed')) {
@@ -101,27 +108,30 @@ const HomeScreen: React.FC = () => {
   };
 
   useEffect(() => {
-    fetchLinks();
-  }, []);
+    fetchCollectionLinks();
+  }, [collection.id]);
 
   useFocusEffect(
     useCallback(() => {
       if (!fetchInProgressRef.current) {
-        fetchLinks();
+        fetchCollectionLinks();
       }
-    }, [])
+    }, [collection.id])
   );
 
   const handleRefresh = () => {
-    fetchLinks(true);
+    fetchCollectionLinks(true);
   };
 
   const handleAddLink = () => {
-    navigation.navigate('AddLink');
+    navigation.navigate('AddLink', { selectedCollectionId: collection.id });
+  };
+
+  const handleBack = () => {
+    navigation.goBack();
   };
 
   const handleLinkPress = (link: Link) => {
-    // Open link in browser
     import('react-native').then(({ Linking }) => {
       Linking.openURL(link.url).catch(err => {
         console.error('Failed to open URL:', err);
@@ -131,7 +141,6 @@ const HomeScreen: React.FC = () => {
   };
 
   const handleLinkLongPress = (link: Link) => {
-    // Show action sheet with options
     Alert.alert(
       link.title || 'Link Options',
       'What would you like to do with this link?',
@@ -177,6 +186,20 @@ const HomeScreen: React.FC = () => {
     }
   };
 
+  const handleShareCollection = async () => {
+    try {
+      const shareContent = {
+        message: `Check out my collection "${collection.name}" with ${collection.linkCount} ${collection.linkCount === 1 ? 'link' : 'links'}!`,
+        title: collection.name,
+      };
+      
+      await Share.share(shareContent);
+    } catch (error) {
+      console.error('Error sharing collection:', error);
+      Alert.alert('Error', 'Failed to share collection');
+    }
+  };
+
   const handleAddToCollection = (link: Link) => {
     setState(prev => ({
       ...prev,
@@ -194,7 +217,7 @@ const HomeScreen: React.FC = () => {
   };
 
   const handleAddToCollectionSuccess = () => {
-    fetchLinks(true);
+    fetchCollectionLinks(true);
   };
 
   const handleSignInAgain = () => {
@@ -205,7 +228,6 @@ const HomeScreen: React.FC = () => {
     const links = state.links;
     const rows: React.ReactElement[] = [];
     
-    // Simple 2-column grid layout
     for (let i = 0; i < links.length; i += 2) {
       const rowLinks = links.slice(i, i + 2);
       
@@ -223,7 +245,6 @@ const HomeScreen: React.FC = () => {
               </View>
             );
           })}
-          {/* Add empty space if odd number of links */}
           {rowLinks.length === 1 && <View style={styles.gridCard} />}
         </View>
       );
@@ -232,51 +253,18 @@ const HomeScreen: React.FC = () => {
     return rows;
   };
 
-  const renderQuickStats = () => {
-    const totalLinks = state.links.length;
-    const pinnedLinks = state.links.filter(link => link.is_pinned).length;
-    const recentLinks = state.links.filter(link => {
-      const linkDate = new Date(link.created_at);
-      const weekAgo = new Date();
-      weekAgo.setDate(weekAgo.getDate() - 7);
-      return linkDate > weekAgo;
-    }).length;
-
-    return (
-      <View style={styles.statsContainer}>
-        <View style={styles.statCard}>
-          <Icon name="bookmark" size={24} color={Colors.primary} />
-          <Text style={styles.statNumber}>{totalLinks}</Text>
-          <Text style={styles.statLabel}>Total Links</Text>
-        </View>
-        
-        <View style={styles.statCard}>
-          <Icon name="push-pin" size={24} color={Colors.accent} />
-          <Text style={styles.statNumber}>{pinnedLinks}</Text>
-          <Text style={styles.statLabel}>Pinned</Text>
-        </View>
-        
-        <View style={styles.statCard}>
-          <Icon name="schedule" size={24} color={Colors.secondary} />
-          <Text style={styles.statNumber}>{recentLinks}</Text>
-          <Text style={styles.statLabel}>This Week</Text>
-        </View>
-      </View>
-    );
-  };
-
   const renderEmptyState = () => (
     <View style={styles.emptyState}>
       <View style={styles.emptyIconContainer}>
         <Icon name="bookmark-border" size={64} color={Colors.textLight} />
       </View>
-      <Text style={styles.emptyTitle}>Start saving links</Text>
+      <Text style={styles.emptyTitle}>No links yet</Text>
       <Text style={styles.emptyDescription}>
-        Save interesting articles, videos, and resources to access them later from anywhere.
+        Add links to "{collection.name}" to see them here
       </Text>
       <TouchableOpacity style={styles.addButton} onPress={handleAddLink}>
         <Icon name="add" size={20} color={Colors.surface} />
-        <Text style={styles.addButtonText}>Add Your First Link</Text>
+        <Text style={styles.addButtonText}>Add Link</Text>
       </TouchableOpacity>
     </View>
   );
@@ -287,7 +275,7 @@ const HomeScreen: React.FC = () => {
       <Text style={styles.errorTitle}>Unable to load links</Text>
       <Text style={styles.errorDescription}>{state.error}</Text>
       
-      <TouchableOpacity style={styles.retryButton} onPress={() => fetchLinks()}>
+      <TouchableOpacity style={styles.retryButton} onPress={() => fetchCollectionLinks()}>
         <Text style={styles.retryButtonText}>Try Again</Text>
       </TouchableOpacity>
       
@@ -299,15 +287,63 @@ const HomeScreen: React.FC = () => {
     </View>
   );
 
+  const getCollectionIcon = () => {
+    if (collection.is_public) {
+      return 'public';
+    }
+    return 'folder';
+  };
+
+  const formatDate = (dateString: string): string => {
+    const date = new Date(dateString);
+    return date.toLocaleDateString('en-US', {
+      month: 'short',
+      day: 'numeric',
+      year: 'numeric'
+    });
+  };
+
+  const collectionColor = getCollectionColor(0); // Use first color for consistency
+
   if (state.loading) {
     return (
       <SafeAreaView style={styles.container}>
         <View style={styles.header}>
-          <Text style={styles.headerTitle}>My Links</Text>
-          <Text style={styles.headerSubtitle}>Loading your saved links...</Text>
+          <TouchableOpacity onPress={handleBack} style={styles.backButton}>
+            <Icon name="arrow-back" size={24} color={Colors.primary} />
+          </TouchableOpacity>
+          <Text style={styles.headerTitle} numberOfLines={1}>
+            {collection.name}
+          </Text>
+          <TouchableOpacity onPress={handleShareCollection} style={styles.headerAction}>
+            <Icon name="share" size={24} color={Colors.primary} />
+          </TouchableOpacity>
+        </View>
+
+        <View style={styles.collectionInfo}>
+          <View style={styles.collectionHeader}>
+            <View style={[styles.collectionIcon, { backgroundColor: collectionColor }]}>
+              <Icon name={getCollectionIcon()} size={28} color={Colors.surface} />
+            </View>
+            <View style={styles.collectionDetails}>
+              <Text style={styles.collectionName}>{collection.name}</Text>
+              <Text style={styles.collectionMeta}>
+                Loading links... • Created {formatDate(collection.created_at)}
+              </Text>
+            </View>
+          </View>
+          {collection.description && (
+            <Text style={styles.collectionDescription}>{collection.description}</Text>
+          )}
+          {collection.is_public && (
+            <View style={styles.publicBadge}>
+              <Icon name="public" size={14} color={Colors.primary} />
+              <Text style={styles.publicBadgeText}>Public Collection</Text>
+            </View>
+          )}
         </View>
         
-        <LinksLoadingSkeleton count={6} />
+        <LinksLoadingSkeleton count={4} />
         
         <TouchableOpacity style={styles.fab} onPress={handleAddLink}>
           <Icon name="add" size={24} color={Colors.surface} />
@@ -318,21 +354,41 @@ const HomeScreen: React.FC = () => {
 
   return (
     <SafeAreaView style={styles.container}>
-      {/* Header */}
       <View style={styles.header}>
-        <View>
-          <Text style={styles.headerTitle}>My Links</Text>
-          <Text style={styles.headerSubtitle}>
-            {state.links.length} {state.links.length === 1 ? 'link' : 'links'} saved
-          </Text>
-        </View>
-        
-        <TouchableOpacity style={styles.headerButton} onPress={handleAddLink}>
-          <Icon name="add" size={24} color={Colors.primary} />
+        <TouchableOpacity onPress={handleBack} style={styles.backButton}>
+          <Icon name="arrow-back" size={24} color={Colors.primary} />
+        </TouchableOpacity>
+        <Text style={styles.headerTitle} numberOfLines={1}>
+          {collection.name}
+        </Text>
+        <TouchableOpacity onPress={handleShareCollection} style={styles.headerAction}>
+          <Icon name="share" size={24} color={Colors.primary} />
         </TouchableOpacity>
       </View>
 
-      {/* Content */}
+      <View style={styles.collectionInfo}>
+        <View style={styles.collectionHeader}>
+          <View style={[styles.collectionIcon, { backgroundColor: collectionColor }]}>
+            <Icon name={getCollectionIcon()} size={28} color={Colors.surface} />
+          </View>
+          <View style={styles.collectionDetails}>
+            <Text style={styles.collectionName}>{collection.name}</Text>
+            <Text style={styles.collectionMeta}>
+              {state.links.length} {state.links.length === 1 ? 'link' : 'links'} • Created {formatDate(collection.created_at)}
+            </Text>
+          </View>
+        </View>
+        {collection.description && (
+          <Text style={styles.collectionDescription}>{collection.description}</Text>
+        )}
+        {collection.is_public && (
+          <View style={styles.publicBadge}>
+            <Icon name="public" size={14} color={Colors.primary} />
+            <Text style={styles.publicBadgeText}>Public Collection</Text>
+          </View>
+        )}
+      </View>
+
       {state.error ? (
         renderErrorState()
       ) : (
@@ -355,25 +411,17 @@ const HomeScreen: React.FC = () => {
           {state.links.length === 0 ? (
             renderEmptyState()
           ) : (
-            <>
-              {/* Quick Stats */}
-              {renderQuickStats()}
-              
-              {/* Links Grid */}
-              <View style={styles.gridContainer}>
-                {renderLinksGrid()}
-              </View>
-            </>
+            <View style={styles.gridContainer}>
+              {renderLinksGrid()}
+            </View>
           )}
         </ScrollView>
       )}
-
-      {/* Floating Action Button */}
+      
       <TouchableOpacity style={styles.fab} onPress={handleAddLink}>
         <Icon name="add" size={24} color={Colors.surface} />
       </TouchableOpacity>
 
-      {/* Add to Collection Modal */}
       {state.showAddToCollectionModal && state.selectedLinkForCollection && (
         <AddToCollectionModal
           visible={state.showAddToCollectionModal}
@@ -391,79 +439,102 @@ const styles = StyleSheet.create({
     ...CommonStyles.container,
   },
   header: {
-    backgroundColor: Colors.surface,
-    paddingHorizontal: Spacing.lg,
-    paddingTop: Spacing.md,
-    paddingBottom: Spacing.md,
     flexDirection: 'row',
-    justifyContent: 'space-between',
     alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: Spacing.lg, // Increased from Spacing.md
+    paddingVertical: Spacing.md, // Increased from Spacing.sm
+    backgroundColor: Colors.surface,
     borderBottomWidth: 1,
     borderBottomColor: Colors.surfaceSecondary,
   },
-  headerTitle: {
-    ...Typography.h1,
-    fontSize: 28,
-    marginBottom: Spacing.xs,
+  backButton: {
+    padding: Spacing.sm,
+    marginLeft: -Spacing.sm,
   },
-  headerSubtitle: {
+  headerTitle: {
+    ...Typography.bodyBold,
+    fontSize: 18,
+    flex: 1,
+    textAlign: 'center',
+    marginHorizontal: Spacing.lg, // Increased from Spacing.md
+  },
+  headerAction: {
+    padding: Spacing.sm,
+    marginRight: -Spacing.sm,
+  },
+  collectionInfo: {
+    backgroundColor: Colors.surface,
+    padding: Spacing.xl, // Increased from Spacing.lg
+    borderBottomWidth: 1,
+    borderBottomColor: Colors.surfaceSecondary,
+  },
+  collectionHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: Spacing.md, // Increased from Spacing.sm
+  },
+  collectionIcon: {
+    width: 48,
+    height: 48,
+    borderRadius: BorderRadius.md,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: Spacing.lg, // Increased from Spacing.md
+  },
+  collectionDetails: {
+    flex: 1,
+  },
+  collectionName: {
+    ...Typography.h3,
+    marginBottom: Spacing.sm, // Increased from Spacing.xs
+  },
+  collectionMeta: {
     ...Typography.caption,
     color: Colors.textTertiary,
   },
-  headerButton: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
-    backgroundColor: Colors.surfaceSecondary,
-    justifyContent: 'center',
+  collectionDescription: {
+    ...Typography.body,
+    marginBottom: Spacing.lg, // Increased from Spacing.sm
+    lineHeight: 22, // Added line height for better readability
+  },
+  publicBadge: {
+    flexDirection: 'row',
     alignItems: 'center',
+    backgroundColor: Colors.surfaceSecondary,
+    paddingHorizontal: Spacing.md, // Increased from Spacing.sm
+    paddingVertical: Spacing.sm, // Increased from Spacing.xs
+    borderRadius: BorderRadius.md, // Increased from BorderRadius.sm
+    alignSelf: 'flex-start',
+    marginTop: Spacing.sm, // Added margin top for better separation
+  },
+  publicBadgeText: {
+    ...Typography.labelSmall,
+    color: Colors.primary,
+    marginLeft: Spacing.sm, // Increased from Spacing.xs
   },
   scrollView: {
     flex: 1,
   },
   scrollContent: {
     paddingTop: Spacing.lg,
-    paddingBottom: 120, // Increased from 100 to match CollectionDetailScreen
+    paddingBottom: 120, // Increased from 100 to give more space for FAB
   },
   emptyScrollContent: {
     flex: 1,
     justifyContent: 'center',
   },
-  statsContainer: {
-    flexDirection: 'row',
-    paddingHorizontal: Spacing.lg, // Changed from Spacing.md to match grid container
-    marginBottom: Spacing.xl, // Increased from Spacing.lg for better separation
-  },
-  statCard: {
-    flex: 1,
-    backgroundColor: Colors.surface,
-    borderRadius: BorderRadius.md,
-    padding: Spacing.md,
-    alignItems: 'center',
-    marginHorizontal: Spacing.xs,
-    ...Shadows.small,
-  },
-  statNumber: {
-    ...Typography.h2,
-    fontSize: 20,
-    marginTop: Spacing.xs,
-    marginBottom: Spacing.xs,
-  },
-  statLabel: {
-    ...Typography.labelSmall,
-    color: Colors.textTertiary,
-  },
   gridContainer: {
-    paddingHorizontal: Spacing.lg, // Changed from Spacing.md to match CollectionDetailScreen
+    paddingHorizontal: Spacing.lg, // Increased from Spacing.md
   },
   gridRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    marginBottom: Spacing.lg, // Changed from Spacing.md to match CollectionDetailScreen
-    paddingHorizontal: 0, // Removed horizontal padding like CollectionDetailScreen
+    marginBottom: Spacing.lg, // Increased from Spacing.md
+    paddingHorizontal: 0, // Removed horizontal padding
   },
   gridCard: {
-    width: (screenWidth - (Spacing.lg * 2) - Spacing.md) / 2, // Updated to match CollectionDetailScreen calculation
+    width: (screenWidth - (Spacing.lg * 2) - Spacing.lg) / 2, // Adjusted for better spacing
   },
   emptyState: {
     alignItems: 'center',
@@ -487,7 +558,6 @@ const styles = StyleSheet.create({
     ...Typography.body,
     textAlign: 'center',
     marginBottom: Spacing.xl,
-    lineHeight: 24,
   },
   addButton: {
     backgroundColor: Colors.primary,
@@ -545,8 +615,8 @@ const styles = StyleSheet.create({
   },
   fab: {
     position: 'absolute',
-    bottom: 40, // Increased from 30 to match CollectionDetailScreen
-    right: 24, // Increased from 20 to match CollectionDetailScreen
+    bottom: 40, // Increased from 30 for better spacing
+    right: 24, // Increased from 20 for better spacing
     width: 56,
     height: 56,
     borderRadius: 28,
@@ -554,8 +624,8 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     ...Shadows.large,
-    elevation: 8, // Added elevation for Android consistency
+    elevation: 8, // Added elevation for Android
   },
 });
 
-export default HomeScreen; 
+export default CollectionDetailScreen; 

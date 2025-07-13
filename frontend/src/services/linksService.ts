@@ -69,7 +69,26 @@ export class LinksService {
    */
   static async addLinkToCollections(linkId: string, collectionIds: string[]): Promise<void> {
     try {
-      const collectionLinks = collectionIds.map(collectionId => ({
+      // First check if any of these relationships already exist to avoid duplicates
+      const { data: existingLinks, error: checkError } = await supabase
+        .from('collection_links')
+        .select('collection_id')
+        .eq('link_id', linkId)
+        .in('collection_id', collectionIds);
+
+      if (checkError) {
+        throw checkError;
+      }
+
+      const existingCollectionIds = existingLinks?.map(item => item.collection_id) || [];
+      const newCollectionIds = collectionIds.filter(id => !existingCollectionIds.includes(id));
+
+      if (newCollectionIds.length === 0) {
+        // All collections already contain this link
+        return;
+      }
+
+      const collectionLinks = newCollectionIds.map(collectionId => ({
         link_id: linkId,
         collection_id: collectionId,
       }));
@@ -83,6 +102,93 @@ export class LinksService {
       }
     } catch (error) {
       console.error('Error adding link to collections:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Remove a link from a specific collection
+   */
+  static async removeLinkFromCollection(linkId: string, collectionId: string): Promise<void> {
+    try {
+      const { error } = await supabase
+        .from('collection_links')
+        .delete()
+        .eq('link_id', linkId)
+        .eq('collection_id', collectionId);
+
+      if (error) {
+        throw error;
+      }
+    } catch (error) {
+      console.error('Error removing link from collection:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Remove a link from all collections
+   */
+  static async removeLinkFromAllCollections(linkId: string): Promise<void> {
+    try {
+      const { error } = await supabase
+        .from('collection_links')
+        .delete()
+        .eq('link_id', linkId);
+
+      if (error) {
+        throw error;
+      }
+    } catch (error) {
+      console.error('Error removing link from all collections:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Get all collections that contain a specific link
+   */
+  static async getLinkCollections(linkId: string): Promise<Collection[]> {
+    try {
+      const { data, error } = await supabase
+        .from('collection_links')
+        .select(`
+          collections (*)
+        `)
+        .eq('link_id', linkId);
+
+      if (error) {
+        throw error;
+      }
+
+      // Extract collections from the join result
+      const collections = data?.map((item: any) => item.collections).filter(Boolean) || [];
+      return collections;
+    } catch (error) {
+      console.error('Error fetching link collections:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Check if a link is in a specific collection
+   */
+  static async isLinkInCollection(linkId: string, collectionId: string): Promise<boolean> {
+    try {
+      const { data, error } = await supabase
+        .from('collection_links')
+        .select('id')
+        .eq('link_id', linkId)
+        .eq('collection_id', collectionId)
+        .maybeSingle();
+
+      if (error) {
+        throw error;
+      }
+
+      return !!data;
+    } catch (error) {
+      console.error('Error checking if link is in collection:', error);
       throw error;
     }
   }
