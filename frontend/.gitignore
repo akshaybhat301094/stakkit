@@ -2,6 +2,8 @@
 .expo/
 dist/
 web-build/
+ios/
+android/
 
 # Native
 *.orig.*
