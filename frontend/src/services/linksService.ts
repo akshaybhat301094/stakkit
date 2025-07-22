@@ -228,6 +228,32 @@ export class LinksService {
   }
 
   /**
+   * Get all links for a specific user with their collections
+   */
+  static async getUserLinksWithCollections(userId?: string): Promise<(Link & { collections: Collection[] })[]> {
+    try {
+      // First get all user links
+      const links = await this.getUserLinks(userId);
+      
+             // Then get collections for each link
+       const linksWithCollections = await Promise.all(
+         links.map(async (link) => {
+           const collections = await this.getLinkCollections(link.id);
+           return {
+             ...link,
+             collections: collections || [], // Ensure it's always an array
+           };
+         })
+       );
+
+      return linksWithCollections;
+    } catch (error) {
+      console.error('Error fetching links with collections:', error);
+      throw error;
+    }
+  }
+
+  /**
    * Get links in a specific collection
    */
   static async getLinksInCollection(collectionId: string): Promise<Link[]> {

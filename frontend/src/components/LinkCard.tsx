@@ -5,11 +5,11 @@ import {
   TouchableOpacity,
   StyleSheet,
   Alert,
-  Linking,
   Image,
   ActivityIndicator,
 } from 'react-native';
-import Icon from 'react-native-vector-icons/MaterialIcons';
+import * as WebBrowser from 'expo-web-browser';
+import { MaterialIcons as Icon } from '@expo/vector-icons';
 import { Link } from '../types/database';
 import { LinkPreview } from '../types';
 import LinkMetadataService from '../services/linkMetadataService';
@@ -104,12 +104,7 @@ const LinkCard: React.FC<LinkCardProps> = ({ link, onEdit, onDelete, onShare, on
 
   const handleOpenLink = async () => {
     try {
-      const supported = await Linking.canOpenURL(link.url);
-      if (supported) {
-        await Linking.openURL(link.url);
-      } else {
-        Alert.alert('Error', 'Cannot open this URL');
-      }
+      await WebBrowser.openBrowserAsync(link.url);
     } catch (error) {
       Alert.alert('Error', 'Failed to open link');
     }

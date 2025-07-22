@@ -1,6 +1,7 @@
 import React from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, Linking } from 'react-native';
-import Icon from 'react-native-vector-icons/MaterialIcons';
+import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
+import { MaterialIcons as Icon } from '@expo/vector-icons';
+import * as WebBrowser from 'expo-web-browser';
 import { Link } from '../types/database';
 import { getDomainFromURL } from '../utils/urlValidation';
 
@@ -18,7 +19,7 @@ const LinkPreview: React.FC<LinkPreviewProps> = ({ link, onPress, onLongPress })
       onPress();
     } else {
       // Default behavior: open the link
-      Linking.openURL(link.url).catch(err => {
+      WebBrowser.openBrowserAsync(link.url).catch(err => {
         console.error('Failed to open URL:', err);
       });
     }

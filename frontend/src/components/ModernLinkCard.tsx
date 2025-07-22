@@ -7,8 +7,8 @@ import {
   Image,
   Dimensions,
 } from 'react-native';
-import Icon from 'react-native-vector-icons/MaterialIcons';
-import { Link } from '../types/database';
+import { MaterialIcons as Icon } from '@expo/vector-icons';
+import { Link, LinkWithCollections, Collection } from '../types/database';
 import { LinkPreview } from '../types';
 import LinkMetadataService from '../services/linkMetadataService';
 import { 
@@ -21,9 +21,9 @@ import {
 } from './DesignSystem';
 
 interface ModernLinkCardProps {
-  link: Link;
-  onPress?: (link: Link) => void;
-  onLongPress?: (link: Link) => void;
+  link: Link & { collections?: Collection[] };
+  onPress?: (link: Link & { collections?: Collection[] }) => void;
+  onLongPress?: (link: Link & { collections?: Collection[] }) => void;
   size?: 'small' | 'medium' | 'large';
   showActions?: boolean;
 }
@@ -68,17 +68,17 @@ const ModernLinkCard: React.FC<ModernLinkCardProps> = ({
       case 'small':
         return {
           width: (screenWidth - padding - gutter) / 2,
-          height: 200, // Further increased from 180
+          height: 200, // Reverted since collections are now at top
         };
       case 'large':
         return {
           width: screenWidth - padding,
-          height: 280, // Further increased from 260
+          height: 280, // Reverted since collections are now at top
         };
       default:
         return {
           width: (screenWidth - padding - gutter) / 2,
-          height: 240, // Further increased from 220
+          height: 240, // Reverted since collections are now at top
         };
     }
   };
@@ -200,6 +200,26 @@ const ModernLinkCard: React.FC<ModernLinkCardProps> = ({
             <Icon name="push-pin" size={14} color={Colors.surface} />
           </View>
         )}
+
+        {/* Collection indicators - Top right */}
+        {link.collections && link.collections.length > 0 && (
+          <View style={styles.topRightCollections}>
+            {link.collections.slice(0, 1).map((collection) => (
+              <View key={collection.id} style={styles.topCollectionChip}>
+                <Text style={styles.topCollectionName} numberOfLines={1}>
+                  {collection.name}
+                </Text>
+              </View>
+            ))}
+            {link.collections.length > 1 && (
+              <View style={styles.topCollectionChip}>
+                <Text style={styles.topCollectionName}>
+                  +{link.collections.length - 1}
+                </Text>
+              </View>
+            )}
+          </View>
+        )}
       </View>
 
       {/* Content Section */}
@@ -226,9 +246,9 @@ const ModernLinkCard: React.FC<ModernLinkCardProps> = ({
           </Text>
         )}
 
-        {/* Bottom section with tags and notes */}
+        {/* Bottom section with notes and collections */}
         <View style={styles.bottomSection}>
-          {/* Notes - Keep notes but remove tags */}
+          {/* Notes */}
           {link.notes && size !== 'small' && (
             <View style={styles.notesContainer}>
               <Icon name="note" size={12} color={Colors.textTertiary} />
@@ -237,6 +257,8 @@ const ModernLinkCard: React.FC<ModernLinkCardProps> = ({
               </Text>
             </View>
           )}
+          
+
         </View>
       </View>
     </TouchableOpacity>
@@ -327,7 +349,7 @@ const styles = StyleSheet.create({
   },
   bottomSection: {
     marginTop: 'auto', // Push to bottom
-    minHeight: 20, // Reduced minimum height since no tags
+    minHeight: 20, // Reduced since collections moved to top
   },
   notesContainer: {
     flexDirection: 'row',
@@ -339,6 +361,38 @@ const styles = StyleSheet.create({
     color: Colors.textTertiary,
     marginLeft: Spacing.xs,
     flex: 1,
+  },
+
+  topRightCollections: {
+    position: 'absolute',
+    top: Spacing.sm,
+    right: Spacing.sm,
+    flexDirection: 'row',
+    alignItems: 'center',
+    zIndex: 10,
+  },
+  topCollectionChip: {
+    backgroundColor: Colors.surface,
+    paddingHorizontal: Spacing.xs,
+    paddingVertical: 4,
+    borderRadius: BorderRadius.sm,
+    marginLeft: 4,
+    maxWidth: 60,
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: 1,
+    },
+    shadowOpacity: 0.22,
+    shadowRadius: 2.22,
+    elevation: 3,
+  },
+  topCollectionName: {
+    ...Typography.labelSmall,
+    fontSize: 9,
+    color: Colors.primary,
+    fontWeight: '600',
+    textAlign: 'center',
   },
 });
 
