@@ -1,32 +1,20 @@
 const { getDefaultConfig } = require('expo/metro-config');
 
-const config = getDefaultConfig(__dirname);
+module.exports = (() => {
+  const config = getDefaultConfig(__dirname);
 
-// Add web-specific resolver configuration
-config.resolver.platforms = ['ios', 'android', 'native', 'web'];
-config.resolver.sourceExts = [...config.resolver.sourceExts, 'web.js', 'web.ts', 'web.tsx'];
+  const { transformer, resolver } = config;
 
-// Add web-specific asset extensions and handle image processing
-config.resolver.assetExts = [
-  ...config.resolver.assetExts,
-  'bin',
-  'txt',
-  'jpg',
-  'jpeg',
-  'png',
-  'gif',
-  'webp',
-  'bmp',
-  'tiff',
-  'svg'
-];
+  config.transformer = {
+    ...transformer,
+    babelTransformerPath: require.resolve('react-native-svg-transformer'),
+  };
+  
+  config.resolver = {
+    ...resolver,
+    assetExts: resolver.assetExts.filter((ext) => ext !== 'svg'),
+    sourceExts: [...resolver.sourceExts, 'svg'],
+  };
 
-// Configure web-specific transformations
-config.transformer.getTransformOptions = async () => ({
-  transform: {
-    experimentalImportSupport: false,
-    inlineRequires: true,
-  },
-});
-
-module.exports = config; 
+  return config;
+})(); 
