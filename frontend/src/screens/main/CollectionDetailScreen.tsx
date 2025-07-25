@@ -13,7 +13,7 @@ import {
 } from 'react-native';
 import { useNavigation, useRoute, useFocusEffect } from '@react-navigation/native';
 import { StackNavigationProp } from '@react-navigation/stack';
-import Icon from 'react-native-vector-icons/MaterialIcons';
+import { MaterialIcons as Icon } from '@expo/vector-icons';
 import { MainStackParamList } from '../../navigation/MainNavigator';
 import { Link, Collection } from '../../types/database';
 import ModernLinkCard from '../../components/ModernLinkCard';
@@ -132,8 +132,8 @@ const CollectionDetailScreen: React.FC = () => {
   };
 
   const handleLinkPress = (link: Link) => {
-    import('react-native').then(({ Linking }) => {
-      Linking.openURL(link.url).catch(err => {
+    import('expo-web-browser').then(({ openBrowserAsync }) => {
+      openBrowserAsync(link.url).catch(err => {
         console.error('Failed to open URL:', err);
         Alert.alert('Error', 'Could not open link');
       });
@@ -155,7 +155,7 @@ const CollectionDetailScreen: React.FC = () => {
   };
 
   const handleEditLink = (link: Link) => {
-    Alert.alert('Coming Soon', 'Link editing will be available soon!');
+    navigation.navigate('EditLink', { link });
   };
 
   const handleDeleteLink = async (link: Link) => {

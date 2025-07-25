@@ -6,7 +6,7 @@ import {
   StyleSheet,
   Dimensions,
 } from 'react-native';
-import Icon from 'react-native-vector-icons/MaterialIcons';
+import { MaterialIcons as Icon } from '@expo/vector-icons';
 import { Collection } from '../types/database';
 import { 
   Colors, 
@@ -21,6 +21,7 @@ import {
 interface ModernCollectionCardProps {
   collection: Collection & { linkCount: number };
   onPress?: (collection: Collection) => void;
+  onLongPress?: (collection: Collection) => void;
   size?: 'small' | 'medium' | 'large';
   index?: number;
 }
@@ -30,11 +31,16 @@ const { width: screenWidth } = Dimensions.get('window');
 const ModernCollectionCard: React.FC<ModernCollectionCardProps> = ({ 
   collection, 
   onPress, 
+  onLongPress,
   size = 'medium',
   index = 0 
 }) => {
   const handlePress = () => {
     onPress?.(collection);
+  };
+
+  const handleLongPress = () => {
+    onLongPress?.(collection);
   };
 
   const getCardDimensions = () => {
@@ -89,6 +95,7 @@ const ModernCollectionCard: React.FC<ModernCollectionCardProps> = ({
         }
       ]} 
       onPress={handlePress}
+      onLongPress={handleLongPress}
       activeOpacity={0.8}
     >
       {/* Background pattern overlay */}

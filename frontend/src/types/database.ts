@@ -139,6 +139,7 @@ export interface Database {
 export type User = Database['public']['Tables']['users']['Row'];
 export type Collection = Database['public']['Tables']['collections']['Row'];
 export type Link = Database['public']['Tables']['links']['Row'];
+export type LinkWithCollections = Link & { collections?: Collection[] };
 export type CollectionLink = Database['public']['Tables']['collection_links']['Row'];
 
 export type InsertUser = Database['public']['Tables']['users']['Insert'];

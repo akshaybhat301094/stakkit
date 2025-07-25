@@ -13,7 +13,7 @@ import {
 } from 'react-native';
 import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import { StackNavigationProp } from '@react-navigation/stack';
-import Icon from 'react-native-vector-icons/MaterialIcons';
+import { MaterialIcons as Icon } from '@expo/vector-icons';
 import { MainStackParamList } from '../../navigation/MainNavigator';
 import { Collection } from '../../types/database';
 import ModernCollectionCard from '../../components/ModernCollectionCard';
@@ -127,7 +127,7 @@ const CollectionsScreen: React.FC = () => {
   };
 
   const handleEditCollection = (collection: Collection) => {
-    Alert.alert('Coming Soon', 'Collection editing will be available soon!');
+    navigation.navigate('EditCollection', { collection });
   };
 
   const handleDeleteCollection = async (collection: Collection) => {
@@ -142,6 +142,45 @@ const CollectionsScreen: React.FC = () => {
       console.error('Error deleting collection:', error);
       Alert.alert('Error', 'Failed to delete collection. Please try again.');
     }
+  };
+
+  const handleCollectionLongPress = (collection: Collection) => {
+    Alert.alert(
+      collection.name,
+      'What would you like to do with this collection?',
+      [
+        { text: 'Edit', onPress: () => handleEditCollection(collection) },
+        { text: 'Share', onPress: () => handleShareCollection(collection) },
+        { 
+          text: 'Delete', 
+          onPress: () => confirmDeleteCollection(collection), 
+          style: 'destructive' 
+        },
+        { text: 'Cancel', style: 'cancel' },
+      ]
+    );
+  };
+
+  const confirmDeleteCollection = (collection: Collection) => {
+    const collectionWithCount = state.collections.find(c => c.id === collection.id);
+    const linkCount = collectionWithCount?.linkCount || 0;
+    
+    Alert.alert(
+      'Delete Collection',
+      `Are you sure you want to delete "${collection.name}"?${
+        linkCount > 0 
+          ? `\n\nThis will remove ${linkCount} link${linkCount > 1 ? 's' : ''} from this collection, but the links themselves will remain saved.`
+          : ''
+      }`,
+      [
+        { text: 'Cancel', style: 'cancel' },
+        { 
+          text: 'Delete', 
+          style: 'destructive', 
+          onPress: () => handleDeleteCollection(collection) 
+        },
+      ]
+    );
   };
 
   const handleShareCollection = async (collection: Collection) => {
@@ -183,6 +222,7 @@ const CollectionsScreen: React.FC = () => {
                 <ModernCollectionCard
                   collection={collection}
                   onPress={handleCollectionPress}
+                  onLongPress={handleCollectionLongPress}
                   size="medium"
                   index={globalIndex}
                 />

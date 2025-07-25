@@ -14,7 +14,7 @@ import {
   Switch,
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
-import Icon from 'react-native-vector-icons/MaterialIcons';
+import { MaterialIcons as Icon } from '@expo/vector-icons';
 import { useAppSelector } from '../../store/hooks';
 import { getSafeUserId } from '../../utils/authHelpers';
 import CollectionsService from '../../services/collectionsService';

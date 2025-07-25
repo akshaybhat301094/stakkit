@@ -83,28 +83,49 @@ export const AddToCollectionModal: React.FC<AddToCollectionModalProps> = ({
     try {
       setSaving(true);
       
-      const selectedCollections = collections.filter(c => c.isSelected && !c.isAlreadyAdded);
+      const toAdd = collections.filter(c => c.isSelected && !c.isAlreadyAdded);
+      const toRemove = collections.filter(c => c.isAlreadyAdded && c.isSelected);
       
-      if (selectedCollections.length === 0) {
-        Alert.alert('No Selection', 'Please select at least one collection to add this link to.');
+      if (toAdd.length === 0 && toRemove.length === 0) {
+        Alert.alert('No Changes', 'Please select collections to add or remove.');
         return;
       }
       
-      const collectionIds = selectedCollections.map(c => c.id);
-      await LinksService.addLinkToCollections(link.id, collectionIds);
+      // Add to new collections
+      if (toAdd.length > 0) {
+        const addIds = toAdd.map(c => c.id);
+        await LinksService.addLinkToCollections(link.id, addIds);
+      }
       
-      const collectionNames = selectedCollections.map(c => c.name).join(', ');
+      // Remove from selected collections
+      if (toRemove.length > 0) {
+        for (const collection of toRemove) {
+          await LinksService.removeLinkFromCollection(link.id, collection.id);
+        }
+      }
+      
+      // Create success message
+      const messages = [];
+      if (toAdd.length > 0) {
+        const addNames = toAdd.map(c => c.name).join(', ');
+        messages.push(`Added to: ${addNames}`);
+      }
+      if (toRemove.length > 0) {
+        const removeNames = toRemove.map(c => c.name).join(', ');
+        messages.push(`Removed from: ${removeNames}`);
+      }
+      
       Alert.alert(
         'Success',
-        `Link added to: ${collectionNames}`,
+        messages.join('\n'),
         [{ text: 'OK', onPress: () => {
           onSuccess?.();
           onClose();
         }}]
       );
     } catch (error) {
-      console.error('Error adding link to collections:', error);
-      Alert.alert('Error', 'Failed to add link to collections');
+      console.error('Error updating link collections:', error);
+      Alert.alert('Error', 'Failed to update link collections');
     } finally {
       setSaving(false);
     }
@@ -140,7 +161,7 @@ export const AddToCollectionModal: React.FC<AddToCollectionModalProps> = ({
             <Ionicons name="close" size={24} color="#007AFF" />
           </TouchableOpacity>
           
-          <Text style={styles.headerTitle}>Add to Collection</Text>
+          <Text style={styles.headerTitle}>Manage Collections</Text>
           
           <TouchableOpacity 
             onPress={handleSave} 
@@ -193,9 +214,9 @@ export const AddToCollectionModal: React.FC<AddToCollectionModalProps> = ({
                   style={[
                     styles.collectionItem,
                     collection.isAlreadyAdded && styles.collectionItemAdded,
+                    collection.isSelected && styles.collectionItemSelected,
                   ]}
-                  onPress={() => !collection.isAlreadyAdded && toggleCollection(collection.id)}
-                  disabled={collection.isAlreadyAdded}
+                  onPress={() => toggleCollection(collection.id)}
                 >
                   <View style={styles.collectionItemLeft}>
                     <View 
@@ -231,10 +252,17 @@ export const AddToCollectionModal: React.FC<AddToCollectionModalProps> = ({
                   
                   <View style={styles.collectionItemRight}>
                     {collection.isAlreadyAdded ? (
-                      <View style={styles.addedBadge}>
-                        <Ionicons name="checkmark" size={16} color="#34C759" />
-                        <Text style={styles.addedText}>Added</Text>
-                      </View>
+                      collection.isSelected ? (
+                        <View style={styles.removeBadge}>
+                          <Ionicons name="remove-circle" size={16} color="#FF3B30" />
+                          <Text style={styles.removeText}>Remove</Text>
+                        </View>
+                      ) : (
+                        <View style={styles.addedBadge}>
+                          <Ionicons name="checkmark" size={16} color="#34C759" />
+                          <Text style={styles.addedText}>Added</Text>
+                        </View>
+                      )
                     ) : (
                       <View style={[
                         styles.checkbox,
@@ -359,6 +387,11 @@ const styles = StyleSheet.create({
   collectionItemAdded: {
     backgroundColor: '#F8F9FA',
   },
+  collectionItemSelected: {
+    backgroundColor: '#E3F2FD',
+    borderLeftWidth: 4,
+    borderLeftColor: '#007AFF',
+  },
   collectionItemLeft: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -419,6 +452,20 @@ const styles = StyleSheet.create({
     fontSize: 12,
     fontWeight: '600',
     color: '#34C759',
+    marginLeft: 4,
+  },
+  removeBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    backgroundColor: '#FFEBEE',
+    borderRadius: 12,
+  },
+  removeText: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: '#FF3B30',
     marginLeft: 4,
   },
 }); 

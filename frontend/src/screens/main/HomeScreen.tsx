@@ -13,9 +13,9 @@ import {
 } from 'react-native';
 import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import { StackNavigationProp } from '@react-navigation/stack';
-import Icon from 'react-native-vector-icons/MaterialIcons';
+import { MaterialIcons as Icon } from '@expo/vector-icons';
 import { MainStackParamList } from '../../navigation/MainNavigator';
-import { Link } from '../../types/database';
+import { Link, LinkWithCollections } from '../../types/database';
 import ModernLinkCard from '../../components/ModernLinkCard';
 import { LinksLoadingSkeleton } from '../../components/LoadingCard';
 import { AddToCollectionModal } from '../../components/AddToCollectionModal';
@@ -33,12 +33,12 @@ import {
 type HomeScreenNavigationProp = StackNavigationProp<MainStackParamList, 'MainTabs'>;
 
 interface HomeScreenState {
-  links: Link[];
+  links: LinkWithCollections[];
   loading: boolean;
   refreshing: boolean;
   error: string | null;
   showAddToCollectionModal: boolean;
-  selectedLinkForCollection: Link | null;
+  selectedLinkForCollection: LinkWithCollections | null;
 }
 
 const { width: screenWidth } = Dimensions.get('window');
@@ -71,7 +71,7 @@ const HomeScreen: React.FC = () => {
         error: null 
       }));
 
-      const userLinks = await LinksService.getUserLinks();
+      const userLinks = await LinksService.getUserLinksWithCollections();
       
       setState(prev => ({ 
         ...prev, 
@@ -120,17 +120,17 @@ const HomeScreen: React.FC = () => {
     navigation.navigate('AddLink');
   };
 
-  const handleLinkPress = (link: Link) => {
+  const handleLinkPress = (link: LinkWithCollections) => {
     // Open link in browser
-    import('react-native').then(({ Linking }) => {
-      Linking.openURL(link.url).catch(err => {
+    import('expo-web-browser').then(({ openBrowserAsync }) => {
+      openBrowserAsync(link.url).catch(err => {
         console.error('Failed to open URL:', err);
         Alert.alert('Error', 'Could not open link');
       });
     });
   };
 
-  const handleLinkLongPress = (link: Link) => {
+  const handleLinkLongPress = (link: LinkWithCollections) => {
     // Show action sheet with options
     Alert.alert(
       link.title || 'Link Options',
@@ -145,11 +145,11 @@ const HomeScreen: React.FC = () => {
     );
   };
 
-  const handleEditLink = (link: Link) => {
-    Alert.alert('Coming Soon', 'Link editing will be available soon!');
+  const handleEditLink = (link: LinkWithCollections) => {
+    navigation.navigate('EditLink', { link });
   };
 
-  const handleDeleteLink = async (link: Link) => {
+  const handleDeleteLink = async (link: LinkWithCollections) => {
     try {
       await LinksService.deleteLink(link.id);
       setState(prev => ({
@@ -163,7 +163,7 @@ const HomeScreen: React.FC = () => {
     }
   };
 
-  const handleShareLink = async (link: Link) => {
+  const handleShareLink = async (link: LinkWithCollections) => {
     try {
       const shareContent = {
         message: `Check out this link: ${link.title || link.url}\n\n${link.url}`,
@@ -177,7 +177,7 @@ const HomeScreen: React.FC = () => {
     }
   };
 
-  const handleAddToCollection = (link: Link) => {
+  const handleAddToCollection = (link: LinkWithCollections) => {
     setState(prev => ({
       ...prev,
       showAddToCollectionModal: true,
@@ -326,10 +326,6 @@ const HomeScreen: React.FC = () => {
             {state.links.length} {state.links.length === 1 ? 'link' : 'links'} saved
           </Text>
         </View>
-        
-        <TouchableOpacity style={styles.headerButton} onPress={handleAddLink}>
-          <Icon name="add" size={24} color={Colors.primary} />
-        </TouchableOpacity>
       </View>
 
       {/* Content */}

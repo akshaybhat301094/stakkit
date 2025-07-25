@@ -1,7 +1,9 @@
 import React from 'react';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { createStackNavigator } from '@react-navigation/stack';
-import Icon from 'react-native-vector-icons/MaterialIcons';
+import { Platform } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { MaterialIcons as Icon } from '@expo/vector-icons';
 
 // Import screens
 import HomeScreen from '../screens/main/HomeScreen';
@@ -9,8 +11,10 @@ import CollectionsScreen from '../screens/main/CollectionsScreen';
 import ProfileScreen from '../screens/main/ProfileScreen';
 import AddLinkScreen from '../screens/main/AddLinkScreen';
 import CreateCollectionScreen from '../screens/main/CreateCollectionScreen';
+import EditCollectionScreen from '../screens/main/EditCollectionScreen';
+import EditLinkScreen from '../screens/main/EditLinkScreen';
 import CollectionDetailScreen from '../screens/main/CollectionDetailScreen';
-import { Collection } from '../types/database';
+import { Collection, Link } from '../types/database';
 
 export type MainTabParamList = {
   Collections: undefined;
@@ -24,6 +28,12 @@ export type MainStackParamList = {
     selectedCollectionId?: string;
   } | undefined;
   CreateCollection: undefined;
+  EditCollection: {
+    collection: Collection;
+  };
+  EditLink: {
+    link: Link & { collections?: Collection[] };
+  };
   CollectionDetail: {
     collection: Collection & { linkCount: number };
   };
@@ -33,18 +43,20 @@ const Tab = createBottomTabNavigator<MainTabParamList>();
 const Stack = createStackNavigator<MainStackParamList>();
 
 const MainTabs: React.FC = () => {
+  const insets = useSafeAreaInsets();
+  
   return (
     <Tab.Navigator
       screenOptions={({ route }) => ({
         tabBarIcon: ({ focused, color, size }) => {
-          let iconName: string;
+          let iconName: keyof typeof Icon.glyphMap;
 
           if (route.name === 'Collections') {
             iconName = focused ? 'folder' : 'folder-open';
           } else if (route.name === 'Home') {
-            iconName = focused ? 'home' : 'home';
+            iconName = 'home';
           } else if (route.name === 'Profile') {
-            iconName = focused ? 'person' : 'person-outline';
+            iconName = 'person';
           } else {
             iconName = 'help';
           }
@@ -58,9 +70,9 @@ const MainTabs: React.FC = () => {
           backgroundColor: '#ffffff',
           borderTopWidth: 1,
           borderTopColor: '#E5E5EA',
-          paddingBottom: 8,
+          paddingBottom: Math.max(insets.bottom, 8),
           paddingTop: 8,
-          height: 60,
+          height: 60 + Math.max(insets.bottom - 8, 0),
         },
       })}
     >
@@ -98,6 +110,22 @@ const MainNavigator: React.FC = () => {
       <Stack.Screen 
         name="CreateCollection" 
         component={CreateCollectionScreen}
+        options={{
+          presentation: 'modal',
+          headerShown: false,
+        }}
+      />
+      <Stack.Screen 
+        name="EditCollection" 
+        component={EditCollectionScreen}
+        options={{
+          presentation: 'modal',
+          headerShown: false,
+        }}
+      />
+      <Stack.Screen 
+        name="EditLink" 
+        component={EditLinkScreen}
         options={{
           presentation: 'modal',
           headerShown: false,
