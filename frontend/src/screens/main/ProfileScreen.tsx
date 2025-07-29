@@ -7,11 +7,13 @@ import {
   TouchableOpacity,
   Alert,
   ActivityIndicator,
+  ScrollView,
 } from 'react-native';
 import { useAppSelector, useAppDispatch } from '../../store/hooks';
 import { useSignOutMutation } from '../../store/api/authApi';
 import { logout } from '../../store/slices/authSlice';
 import { supabase } from '../../services/supabase';
+import { useScrollToHide } from '../../hooks/useScrollToHide';
 
 const ProfileScreen: React.FC = () => {
   const dispatch = useAppDispatch();
@@ -20,6 +22,7 @@ const ProfileScreen: React.FC = () => {
   const [userInfo, setUserInfo] = useState<any>(null);
   const [userInfoLoading, setUserInfoLoading] = useState(false);
   const [userInfoError, setUserInfoError] = useState<string | null>(null);
+  const { onScroll } = useScrollToHide();
 
   useEffect(() => {
     const fetchUserInfo = async () => {
@@ -66,52 +69,59 @@ const ProfileScreen: React.FC = () => {
 
   return (
     <SafeAreaView style={styles.container}>
-      <View style={styles.content}>
-        <View style={styles.header}>
-          <Text style={styles.title}>Profile</Text>
-          {userInfoLoading ? (
-            <ActivityIndicator color="#007AFF" />
-          ) : userInfoError ? (
-            <Text style={{ color: 'red' }}>{userInfoError}</Text>
-          ) : userInfo ? (
-            <View style={styles.userInfo}>
-              <Text style={styles.email}>{userInfo.email}</Text>
-              {userInfo.name && <Text style={styles.name}>{userInfo.name}</Text>}
-              <Text style={{ fontSize: 12, color: '#8E8E93', marginTop: 8 }}>User ID: {userInfo.sub}</Text>
-            </View>
-          ) : null}
-        </View>
+      <ScrollView 
+        style={styles.scrollView}
+        contentContainerStyle={styles.scrollContent}
+        onScroll={onScroll}
+        scrollEventThrottle={16}
+      >
+        <View style={styles.content}>
+          <View style={styles.header}>
+            <Text style={styles.title}>Profile</Text>
+            {userInfoLoading ? (
+              <ActivityIndicator color="#007AFF" />
+            ) : userInfoError ? (
+              <Text style={{ color: 'red' }}>{userInfoError}</Text>
+            ) : userInfo ? (
+              <View style={styles.userInfo}>
+                <Text style={styles.email}>{userInfo.email}</Text>
+                {userInfo.name && <Text style={styles.name}>{userInfo.name}</Text>}
+                <Text style={{ fontSize: 12, color: '#8E8E93', marginTop: 8 }}>User ID: {userInfo.sub}</Text>
+              </View>
+            ) : null}
+          </View>
 
-        <View style={styles.section}>
-          <TouchableOpacity style={styles.menuItem}>
-            <Text style={styles.menuItemText}>Edit Profile</Text>
-          </TouchableOpacity>
-          
-          <TouchableOpacity style={styles.menuItem}>
-            <Text style={styles.menuItemText}>Settings</Text>
-          </TouchableOpacity>
-          
-          <TouchableOpacity style={styles.menuItem}>
-            <Text style={styles.menuItemText}>Help & Support</Text>
-          </TouchableOpacity>
-          
-          <TouchableOpacity style={styles.menuItem}>
-            <Text style={styles.menuItemText}>Privacy Policy</Text>
+          <View style={styles.section}>
+            <TouchableOpacity style={styles.menuItem}>
+              <Text style={styles.menuItemText}>Edit Profile</Text>
+            </TouchableOpacity>
+            
+            <TouchableOpacity style={styles.menuItem}>
+              <Text style={styles.menuItemText}>Settings</Text>
+            </TouchableOpacity>
+            
+            <TouchableOpacity style={styles.menuItem}>
+              <Text style={styles.menuItemText}>Help & Support</Text>
+            </TouchableOpacity>
+            
+            <TouchableOpacity style={styles.menuItem}>
+              <Text style={styles.menuItemText}>Privacy Policy</Text>
+            </TouchableOpacity>
+          </View>
+
+          <TouchableOpacity
+            style={[styles.button, styles.logoutButton]}
+            onPress={handleLogout}
+            disabled={isLoading}
+          >
+            {isLoading ? (
+              <ActivityIndicator color="#FF3B30" />
+            ) : (
+              <Text style={styles.logoutButtonText}>Sign Out</Text>
+            )}
           </TouchableOpacity>
         </View>
-
-        <TouchableOpacity
-          style={[styles.button, styles.logoutButton]}
-          onPress={handleLogout}
-          disabled={isLoading}
-        >
-          {isLoading ? (
-            <ActivityIndicator color="#FF3B30" />
-          ) : (
-            <Text style={styles.logoutButtonText}>Sign Out</Text>
-          )}
-        </TouchableOpacity>
-      </View>
+      </ScrollView>
     </SafeAreaView>
   );
 };
@@ -120,6 +130,13 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#ffffff',
+  },
+  scrollView: {
+    flex: 1,
+  },
+  scrollContent: {
+    flexGrow: 1,
+    paddingBottom: 120, // Add padding for floating menu bar
   },
   content: {
     flex: 1,

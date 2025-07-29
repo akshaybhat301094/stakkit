@@ -28,6 +28,7 @@ import {
   Shadows, 
   CommonStyles 
 } from '../../components/DesignSystem';
+import { useScrollToHide } from '../../hooks/useScrollToHide';
 
 type CollectionsScreenNavigationProp = StackNavigationProp<MainStackParamList, 'MainTabs'>;
 
@@ -50,6 +51,7 @@ const CollectionsScreen: React.FC = () => {
     error: null,
   });
   const fetchInProgressRef = useRef(false);
+  const { onScroll } = useScrollToHide();
 
   const fetchCollections = async (isRefreshing = false) => {
     if (fetchInProgressRef.current && !isRefreshing) {
@@ -324,6 +326,8 @@ const CollectionsScreen: React.FC = () => {
             />
           }
           showsVerticalScrollIndicator={false}
+          onScroll={onScroll}
+          scrollEventThrottle={16}
         >
           {state.collections.length === 0 ? (
             renderEmptyState()
@@ -335,10 +339,7 @@ const CollectionsScreen: React.FC = () => {
         </ScrollView>
       )}
 
-      {/* Floating Action Button */}
-      <TouchableOpacity style={styles.fab} onPress={handleAddLink}>
-        <Icon name="add" size={24} color={Colors.surface} />
-      </TouchableOpacity>
+      {/* Remove the FAB since we have the add button in the menu bar */}
     </SafeAreaView>
   );
 };
@@ -380,7 +381,7 @@ const styles = StyleSheet.create({
   },
   scrollContent: {
     paddingTop: Spacing.lg,
-    paddingBottom: 100, // Space for FAB
+    paddingBottom: 120, // Increased padding for floating menu bar
   },
   emptyScrollContent: {
     flex: 1,

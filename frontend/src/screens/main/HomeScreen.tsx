@@ -29,6 +29,7 @@ import {
   Shadows, 
   CommonStyles 
 } from '../../components/DesignSystem';
+import { useScrollToHide } from '../../hooks/useScrollToHide';
 
 type HomeScreenNavigationProp = StackNavigationProp<MainStackParamList, 'MainTabs'>;
 
@@ -55,6 +56,7 @@ const HomeScreen: React.FC = () => {
     selectedLinkForCollection: null,
   });
   const fetchInProgressRef = useRef(false);
+  const { onScroll } = useScrollToHide();
 
   const fetchLinks = async (isRefreshing = false) => {
     if (fetchInProgressRef.current && !isRefreshing) {
@@ -347,6 +349,8 @@ const HomeScreen: React.FC = () => {
             />
           }
           showsVerticalScrollIndicator={false}
+          onScroll={onScroll}
+          scrollEventThrottle={16}
         >
           {state.links.length === 0 ? (
             renderEmptyState()
@@ -364,12 +368,7 @@ const HomeScreen: React.FC = () => {
         </ScrollView>
       )}
 
-      {/* Floating Action Button */}
-      <TouchableOpacity style={styles.fab} onPress={handleAddLink}>
-        <Icon name="add" size={24} color={Colors.surface} />
-      </TouchableOpacity>
-
-      {/* Add to Collection Modal */}
+      {/* Remove FAB since we have the add button in the menu bar */}
       {state.showAddToCollectionModal && state.selectedLinkForCollection && (
         <AddToCollectionModal
           visible={state.showAddToCollectionModal}
@@ -419,7 +418,7 @@ const styles = StyleSheet.create({
   },
   scrollContent: {
     paddingTop: Spacing.lg,
-    paddingBottom: 120, // Increased from 100 to match CollectionDetailScreen
+    paddingBottom: 120, // Increased padding for floating menu bar
   },
   emptyScrollContent: {
     flex: 1,
