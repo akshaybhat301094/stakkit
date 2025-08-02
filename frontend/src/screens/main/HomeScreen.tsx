@@ -29,6 +29,7 @@ import {
   Shadows, 
   CommonStyles 
 } from '../../components/DesignSystem';
+import { useScrollToHide } from '../../hooks/useScrollToHide';
 
 type HomeScreenNavigationProp = StackNavigationProp<MainStackParamList, 'MainTabs'>;
 
@@ -55,6 +56,7 @@ const HomeScreen: React.FC = () => {
     selectedLinkForCollection: null,
   });
   const fetchInProgressRef = useRef(false);
+  const { onScroll } = useScrollToHide();
 
   const fetchLinks = async (isRefreshing = false) => {
     if (fetchInProgressRef.current && !isRefreshing) {
@@ -268,16 +270,18 @@ const HomeScreen: React.FC = () => {
   const renderEmptyState = () => (
     <View style={styles.emptyState}>
       <View style={styles.emptyIconContainer}>
+        {/* TODO: Replace with your SVG component once uploaded */}
         <Icon name="bookmark-border" size={64} color={Colors.textLight} />
       </View>
-      <Text style={styles.emptyTitle}>Start saving links</Text>
-      <Text style={styles.emptyDescription}>
-        Save interesting articles, videos, and resources to access them later from anywhere.
-      </Text>
-      <TouchableOpacity style={styles.addButton} onPress={handleAddLink}>
-        <Icon name="add" size={20} color={Colors.surface} />
-        <Text style={styles.addButtonText}>Add Your First Link</Text>
-      </TouchableOpacity>
+      <View style={styles.emptyTextContainer}>
+        <Text style={styles.emptyTitle}>
+          No <Text style={styles.highlightText}>stakks</Text> yet!
+        </Text>
+        <Text style={styles.emptyDescription}>
+          Send <Text style={styles.highlightText}>reels</Text> you love{'\n'}
+          and we will do the magic!
+        </Text>
+      </View>
     </View>
   );
 
@@ -347,6 +351,8 @@ const HomeScreen: React.FC = () => {
             />
           }
           showsVerticalScrollIndicator={false}
+          onScroll={onScroll}
+          scrollEventThrottle={16}
         >
           {state.links.length === 0 ? (
             renderEmptyState()
@@ -364,12 +370,7 @@ const HomeScreen: React.FC = () => {
         </ScrollView>
       )}
 
-      {/* Floating Action Button */}
-      <TouchableOpacity style={styles.fab} onPress={handleAddLink}>
-        <Icon name="add" size={24} color={Colors.surface} />
-      </TouchableOpacity>
-
-      {/* Add to Collection Modal */}
+      {/* Remove FAB since we have the add button in the menu bar */}
       {state.showAddToCollectionModal && state.selectedLinkForCollection && (
         <AddToCollectionModal
           visible={state.showAddToCollectionModal}
@@ -419,7 +420,7 @@ const styles = StyleSheet.create({
   },
   scrollContent: {
     paddingTop: Spacing.lg,
-    paddingBottom: 120, // Increased from 100 to match CollectionDetailScreen
+    paddingBottom: 120, // Increased padding for floating menu bar
   },
   emptyScrollContent: {
     flex: 1,
@@ -463,27 +464,34 @@ const styles = StyleSheet.create({
   },
   emptyState: {
     alignItems: 'center',
+    justifyContent: 'center',
     paddingHorizontal: Spacing.xl,
     paddingVertical: Spacing.xxl,
+    flex: 1,
   },
   emptyIconContainer: {
-    width: 120,
-    height: 120,
-    borderRadius: 60,
-    backgroundColor: Colors.surfaceSecondary,
-    justifyContent: 'center',
+    marginBottom: Spacing.xl,
+  },
+  emptyTextContainer: {
     alignItems: 'center',
-    marginBottom: Spacing.lg,
   },
   emptyTitle: {
-    ...Typography.h2,
-    marginBottom: Spacing.sm,
+    ...Typography.h1,
+    fontSize: 32,
+    fontWeight: '700',
+    marginBottom: Spacing.lg,
+    textAlign: 'center',
+    color: Colors.textPrimary,
+  },
+  highlightText: {
+    color: '#FF69B4', // Pink color - adjust to match your brand color
   },
   emptyDescription: {
     ...Typography.body,
+    fontSize: 20,
     textAlign: 'center',
-    marginBottom: Spacing.xl,
-    lineHeight: 24,
+    lineHeight: 32,
+    color: Colors.textPrimary,
   },
   addButton: {
     backgroundColor: Colors.primary,

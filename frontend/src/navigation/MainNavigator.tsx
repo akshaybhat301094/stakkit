@@ -1,9 +1,13 @@
-import React from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { createStackNavigator } from '@react-navigation/stack';
-import { Platform } from 'react-native';
+import { Platform, View, TouchableOpacity, StyleSheet, Animated } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { MaterialIcons as Icon } from '@expo/vector-icons';
+import { useNavigation, NavigationProp } from '@react-navigation/native';
+import { Video, AVPlaybackStatus, ResizeMode } from 'expo-av';
+import { LinearGradient } from 'expo-linear-gradient';
+import { useScrollToHide } from '../hooks/useScrollToHide';
 
 // Import screens
 import HomeScreen from '../screens/main/HomeScreen';
@@ -18,7 +22,7 @@ import { Collection, Link } from '../types/database';
 
 export type MainTabParamList = {
   Collections: undefined;
-  Home: undefined;
+  AddLink: undefined;
   Profile: undefined;
 };
 
@@ -42,58 +46,377 @@ export type MainStackParamList = {
 const Tab = createBottomTabNavigator<MainTabParamList>();
 const Stack = createStackNavigator<MainStackParamList>();
 
+// Custom add button component
+const AddButton = ({ onPress }: { onPress: () => void }) => {
+  const [isLoading, setIsLoading] = useState(true);
+
+  const onLoadStart = () => {
+    console.log('Video started loading');
+    setIsLoading(true);
+  };
+
+  const onLoad = () => {
+    console.log('Video loaded successfully');
+    setIsLoading(false);
+  };
+
+  const onError = (error: any) => {
+    console.error('Video loading error:', error);
+    setIsLoading(false);
+  };
+
+  return (
+    <View style={styles.addButtonContainer}>
+      <Video
+        source={require('../../assets/cover.mp4')}
+        style={[
+          styles.videoBackground,
+          isLoading && styles.hidden
+        ]}
+        repeat
+        resizeMode="cover"
+        muted
+        controls={false}
+        onLoadStart={onLoadStart}
+        onLoad={onLoad}
+        onError={onError}
+        bufferConfig={{
+          minBufferMs: 1000,
+          maxBufferMs: 5000,
+          bufferForPlaybackMs: 1000,
+          bufferForPlaybackAfterRebufferMs: 2000
+        }}
+      />
+      <View style={[
+        styles.background,
+        !isLoading && styles.backgroundFaded
+      ]} />
+      <TouchableOpacity
+        style={styles.addButton}
+        onPress={onPress}
+      >
+        <Icon name="add" size={32} color="#FFB5D0" />
+      </TouchableOpacity>
+    </View>
+  );
+};
+
+const CustomTabBar = ({ state, descriptors, navigation, translateY }: any) => {
+  const [status, setStatus] = useState<AVPlaybackStatus>({} as AVPlaybackStatus);
+  const shadowAnim = useRef(new Animated.Value(0)).current;
+
+  useEffect(() => {
+    const animate = () => {
+      Animated.loop(
+        Animated.sequence([
+          Animated.timing(shadowAnim, {
+            toValue: 1,
+            duration: 1500,
+            useNativeDriver: true,
+          }),
+          Animated.timing(shadowAnim, {
+            toValue: 0,
+            duration: 1500,
+            useNativeDriver: true,
+          })
+        ])
+      ).start();
+    };
+
+    animate();
+  }, []);
+
+  const interpolatedShadow = shadowAnim.interpolate({
+    inputRange: [0, 0.5, 1],
+    outputRange: [5, 20, 5]
+  });
+
+  return (
+    <Animated.View style={[
+      styles.tabBarContainer,
+      {
+        transform: [{ translateY }],
+      }
+    ]}>
+      <View style={styles.tabBarContent}>
+        <View style={styles.sideContainer}>
+          <TouchableOpacity
+            style={styles.tabButton}
+            onPress={() => navigation.navigate('Collections')}
+          >
+            <Icon
+              name="collections-bookmark"
+              size={28}
+              color={state.index === 0 ? '#FFFFFF' : '#8E8E93'}
+            />
+          </TouchableOpacity>
+        </View>
+
+        <View style={styles.centerContainer}>
+          <TouchableOpacity
+            style={styles.tabButton}
+            onPress={() => navigation.navigate('Profile')}
+          >
+            <Icon
+              name="person"
+              size={28}
+              color={state.index === 2 ? '#FFFFFF' : '#8E8E93'}
+            />
+          </TouchableOpacity>
+        </View>
+
+        <View style={styles.rightContainer}>
+          <Animated.View style={[
+            styles.addButtonContainer,
+            {
+              shadowOpacity: 0.8,
+              shadowRadius: interpolatedShadow,
+              elevation: interpolatedShadow,
+            }
+          ]}>
+            <LinearGradient
+              colors={['#FFB5D0', '#4A90E2']}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 1, y: 1 }}
+              style={styles.outerGradient}
+            />
+            <LinearGradient
+              colors={['rgba(255,181,208,0.4)', 'rgba(74,144,226,0.4)']}
+              style={styles.gradientShadow}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 1, y: 1 }}
+            />
+            <Video
+              source={require('../../assets/cover.mp4')}
+              style={styles.buttonVideo}
+              shouldPlay
+              isLooping
+              resizeMode={ResizeMode.COVER}
+              isMuted={true}
+              onPlaybackStatusUpdate={setStatus}
+            />
+            <TouchableOpacity
+              style={styles.addButton}
+              onPress={() => navigation.navigate('AddLink')}
+            >
+              <Icon name="add" size={32} color="rgba(255, 255, 255, 0.9)" />
+            </TouchableOpacity>
+          </Animated.View>
+        </View>
+      </View>
+    </Animated.View>
+  );
+};
+
 const MainTabs: React.FC = () => {
-  const insets = useSafeAreaInsets();
-  
+  const navigation = useNavigation<NavigationProp<MainStackParamList>>();
+  const { translateY, onScroll } = useScrollToHide();
+
   return (
     <Tab.Navigator
-      screenOptions={({ route }) => ({
-        tabBarIcon: ({ focused, color, size }) => {
-          let iconName: keyof typeof Icon.glyphMap;
-
-          if (route.name === 'Collections') {
-            iconName = focused ? 'folder' : 'folder-open';
-          } else if (route.name === 'Home') {
-            iconName = 'home';
-          } else if (route.name === 'Profile') {
-            iconName = 'person';
-          } else {
-            iconName = 'help';
-          }
-
-          return <Icon name={iconName} size={size} color={color} />;
-        },
-        tabBarActiveTintColor: '#007AFF',
-        tabBarInactiveTintColor: '#8E8E93',
+      tabBar={(props) => <CustomTabBar {...props} translateY={translateY} />}
+      screenOptions={{
         headerShown: false,
-        tabBarStyle: {
-          backgroundColor: '#ffffff',
-          borderTopWidth: 1,
-          borderTopColor: '#E5E5EA',
-          paddingBottom: Math.max(insets.bottom, 8),
-          paddingTop: 8,
-          height: 60 + Math.max(insets.bottom - 8, 0),
-        },
-      })}
+      }}
     >
       <Tab.Screen 
         name="Collections" 
         component={CollectionsScreen}
-        options={{ title: 'Collections' }}
+        options={{
+          tabBarIcon: ({ color }) => (
+            <Icon name="collections-bookmark" size={24} color={color} />
+          ),
+        }}
+        listeners={{
+          focus: () => ({
+            tabBarStyle: { display: 'flex' }
+          })
+        }}
       />
       <Tab.Screen 
-        name="Home" 
-        component={HomeScreen}
-        options={{ title: 'All Links' }}
+        name="AddLink"
+        component={AddLinkScreen}
+        options={{
+          tabBarIcon: ({ color }) => (
+            <Icon name="add" size={24} color={color} />
+          ),
+        }}
       />
       <Tab.Screen 
         name="Profile" 
         component={ProfileScreen}
-        options={{ title: 'Profile' }}
+        options={{
+          tabBarIcon: ({ color }) => (
+            <Icon name="person" size={24} color={color} />
+          ),
+        }}
       />
     </Tab.Navigator>
   );
 };
+
+const styles = StyleSheet.create({
+  tabBarContainer: {
+    position: 'absolute',
+    bottom: 80, // Increased from 64 to 80 to move it higher
+    left: 16,
+    right: 16,
+    backgroundColor: '#000000',
+    borderRadius: 40,
+    height: 72,
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: 4,
+    },
+    shadowOpacity: 0.3,
+    shadowRadius: 4.65,
+    elevation: 8,
+    paddingHorizontal: 20,
+  },
+  tabBarContent: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingLeft: 20, // Added to balance the space
+  },
+  sideContainer: {
+    width: 60,
+    height: '100%',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  centerContainer: {
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    height: '100%',
+    justifyContent: 'center',
+    alignItems: 'center',
+    zIndex: 0,
+  },
+  rightContainer: {
+    width: 80,
+    height: '100%',
+    justifyContent: 'center',
+    alignItems: 'flex-end',
+    paddingRight: 0, // Removed padding completely
+  },
+  tabButton: {
+    width: '100%',
+    height: '100%',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  addButtonContainer: {
+    width: 52,
+    height: 52,
+    borderRadius: 26,
+    overflow: 'visible',
+    marginTop: 0,
+    marginRight: -8, // Added negative margin to pull it left
+    shadowColor: '#FFB5D0',
+    shadowOffset: {
+      width: 0,
+      height: 0,
+    },
+  },
+  outerGradient: {
+    position: 'absolute',
+    top: -2,
+    left: -2,
+    right: -2,
+    bottom: -2,
+    borderRadius: 28, // Adjusted for new size
+    zIndex: 0,
+  },
+  gradientShadow: {
+    position: 'absolute',
+    top: -8, // Reduced from -10
+    left: -8,
+    right: -8,
+    bottom: -8,
+    borderRadius: 34, // Adjusted for new size
+    opacity: 0.6,
+    zIndex: 0,
+  },
+  buttonVideo: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    width: '100%',
+    height: '100%',
+    borderRadius: 26, // Match new container radius
+    zIndex: 1,
+    overflow: 'hidden',
+  },
+  addButton: {
+    width: '100%',
+    height: '100%',
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: 'transparent',
+    zIndex: 2,
+  },
+  videoBackground: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    width: '100%',
+    height: '100%',
+  },
+  hidden: {
+    opacity: 0,
+  },
+  background: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: 'rgba(0, 0, 0, 1)',
+  },
+  backgroundFaded: {
+    backgroundColor: 'rgba(0, 0, 0, 0.7)',
+  },
+  loadingContainer: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: 'rgba(0,0,0,0.7)',
+    zIndex: 3,
+  },
+  loadingText: {
+    color: '#fff',
+    fontSize: 14,
+  },
+  errorContainer: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: 'rgba(0,0,0,0.7)',
+    zIndex: 3,
+    padding: 10,
+  },
+  errorText: {
+    color: '#ff4444',
+    fontSize: 14,
+    textAlign: 'center',
+  },
+});
 
 const MainNavigator: React.FC = () => {
   return (
