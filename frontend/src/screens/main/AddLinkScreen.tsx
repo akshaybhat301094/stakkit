@@ -26,6 +26,7 @@ import LinksService from '../../services/linksService';
 import LinkMetadataService from '../../services/linkMetadataService';
 import { Collection } from '../../types/database';
 import { LinkPreview } from '../../types';
+import { useTheme } from '../../hooks/useTheme';
 
 interface AddLinkScreenProps {}
 
@@ -34,6 +35,7 @@ const AddLinkScreen: React.FC<AddLinkScreenProps> = () => {
   const route = useRoute();
   const { selectedCollectionId: paramCollectionId } = (route.params as MainStackParamList['AddLink']) || {};
   const { user, isAuthenticated } = useAppSelector((state) => state.auth);
+  const { colors } = useTheme();
   
   // Form state
   const [url, setUrl] = useState('');
@@ -241,10 +243,10 @@ const AddLinkScreen: React.FC<AddLinkScreenProps> = () => {
 
   if (!user?.id) {
     return (
-      <SafeAreaView style={styles.container}>
+      <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
         <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color="#007AFF" />
-          <Text style={styles.loadingText}>Checking session...</Text>
+          <ActivityIndicator size="large" color={colors.primary} />
+          <Text style={[styles.loadingText, { color: colors.textTertiary }]}>Checking session...</Text>
         </View>
       </SafeAreaView>
     );
@@ -252,36 +254,40 @@ const AddLinkScreen: React.FC<AddLinkScreenProps> = () => {
 
   if (isLoading) {
     return (
-      <SafeAreaView style={styles.container}>
+      <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
         <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color="#007AFF" />
-          <Text style={styles.loadingText}>Loading...</Text>
+          <ActivityIndicator size="large" color={colors.primary} />
+          <Text style={[styles.loadingText, { color: colors.textTertiary }]}>Loading...</Text>
         </View>
       </SafeAreaView>
     );
   }
 
   return (
-    <SafeAreaView style={styles.container}>
+    <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
       <KeyboardAvoidingView 
         style={styles.container} 
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
       >
         {/* Header */}
-        <View style={styles.header}>
+        <View style={[styles.header, { borderBottomColor: colors.surfaceSecondary }]}>
           <TouchableOpacity onPress={() => navigation.goBack()} style={styles.headerButton}>
-            <Icon name="close" size={24} color="#007AFF" />
+            <Icon name="close" size={24} color={colors.primary} />
           </TouchableOpacity>
-          <Text style={styles.headerTitle}>Add Link</Text>
+          <Text style={[styles.headerTitle, { color: colors.textPrimary }]}>Add Link</Text>
           <TouchableOpacity 
             onPress={handleSave} 
             style={[styles.headerButton, styles.saveButton]}
             disabled={!url.trim() || !!urlError || isSaving}
           >
             {isSaving ? (
-              <ActivityIndicator size="small" color="#007AFF" />
+              <ActivityIndicator size="small" color={colors.primary} />
             ) : (
-              <Text style={[styles.saveButtonText, (!url.trim() || !!urlError) && styles.saveButtonTextDisabled]}>
+              <Text style={[
+                styles.saveButtonText, 
+                { color: colors.primary },
+                (!url.trim() || !!urlError) && { color: colors.textTertiary }
+              ]}>
                 Save
               </Text>
             )}
@@ -291,40 +297,47 @@ const AddLinkScreen: React.FC<AddLinkScreenProps> = () => {
         <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
           {/* Clipboard suggestion */}
           {clipboardUrl && (
-            <TouchableOpacity style={styles.clipboardSuggestion} onPress={handlePasteFromClipboard}>
-              <Icon name="content-paste" size={20} color="#007AFF" />
-              <Text style={styles.clipboardText}>Paste: {clipboardUrl}</Text>
+            <TouchableOpacity style={[styles.clipboardSuggestion, { backgroundColor: colors.surfaceSecondary }]} onPress={handlePasteFromClipboard}>
+              <Icon name="content-paste" size={20} color={colors.primary} />
+              <Text style={[styles.clipboardText, { color: colors.primary }]}>Paste: {clipboardUrl}</Text>
             </TouchableOpacity>
           )}
 
           {/* URL Input */}
           <View style={styles.inputGroup}>
-            <Text style={styles.label}>URL *</Text>
+            <Text style={[styles.label, { color: colors.textPrimary }]}>URL *</Text>
             <TextInput
-              style={[styles.input, urlError && styles.inputError]}
+              style={[
+                styles.input, 
+                { backgroundColor: colors.surfaceSecondary, color: colors.textPrimary },
+                urlError && { borderColor: colors.warning }
+              ]}
               value={url}
               onChangeText={handleURLChange}
               placeholder="https://example.com"
-              placeholderTextColor="#8E8E93"
+              placeholderTextColor={colors.textTertiary}
               autoCapitalize="none"
               autoCorrect={false}
               keyboardType="url"
               returnKeyType="next"
             />
             {urlError && (
-              <Text style={styles.urlErrorText}>{urlError}</Text>
+              <Text style={[styles.urlErrorText, { color: colors.warning }]}>{urlError}</Text>
             )}
           </View>
 
           {/* Title Input */}
           <View style={styles.inputGroup}>
-            <Text style={styles.label}>Title</Text>
+            <Text style={[styles.label, { color: colors.textPrimary }]}>Title</Text>
             <TextInput
-              style={styles.input}
+              style={[
+                styles.input,
+                { backgroundColor: colors.surfaceSecondary, color: colors.textPrimary }
+              ]}
               value={title}
               onChangeText={setTitle}
               placeholder="Link title (auto-generated from domain)"
-              placeholderTextColor="#8E8E93"
+              placeholderTextColor={colors.textTertiary}
               returnKeyType="next"
             />
           </View>
@@ -394,7 +407,6 @@ const AddLinkScreen: React.FC<AddLinkScreenProps> = () => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#ffffff',
   },
   loadingContainer: {
     flex: 1,
@@ -405,7 +417,6 @@ const styles = StyleSheet.create({
   loadingText: {
     marginTop: 12,
     fontSize: 16,
-    color: '#8E8E93',
   },
   header: {
     flexDirection: 'row',
@@ -414,7 +425,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingVertical: 12,
     borderBottomWidth: 1,
-    borderBottomColor: '#E5E5EA',
   },
   headerButton: {
     padding: 8,
@@ -423,7 +433,6 @@ const styles = StyleSheet.create({
   headerTitle: {
     fontSize: 18,
     fontWeight: '600',
-    color: '#1C1C1E',
   },
   saveButton: {
     alignItems: 'flex-end',
@@ -431,10 +440,9 @@ const styles = StyleSheet.create({
   saveButtonText: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#007AFF',
   },
   saveButtonTextDisabled: {
-    color: '#8E8E93',
+    // Handled dynamically
   },
   content: {
     flex: 1,
@@ -443,7 +451,6 @@ const styles = StyleSheet.create({
   clipboardSuggestion: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#F2F2F7',
     paddingHorizontal: 12,
     paddingVertical: 8,
     borderRadius: 8,
@@ -453,7 +460,6 @@ const styles = StyleSheet.create({
   clipboardText: {
     marginLeft: 8,
     fontSize: 14,
-    color: '#007AFF',
     flex: 1,
   },
   inputGroup: {
@@ -462,21 +468,18 @@ const styles = StyleSheet.create({
   label: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#1C1C1E',
     marginBottom: 8,
   },
   input: {
-    backgroundColor: '#F2F2F7',
     borderRadius: 10,
     paddingHorizontal: 16,
     paddingVertical: 12,
     fontSize: 16,
-    color: '#1C1C1E',
     borderWidth: 1,
     borderColor: 'transparent',
   },
   inputError: {
-    borderColor: '#FF3B30',
+    // Handled dynamically
   },
   notesInput: {
     height: 100,
@@ -485,7 +488,6 @@ const styles = StyleSheet.create({
   urlErrorText: {
     marginTop: 4,
     fontSize: 14,
-    color: '#FF3B30',
   },
   collectionSelector: {
     backgroundColor: '#F2F2F7',

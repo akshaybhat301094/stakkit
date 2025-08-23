@@ -18,10 +18,12 @@ import { MaterialIcons as Icon } from '@expo/vector-icons';
 import { useAppSelector } from '../../store/hooks';
 import { getSafeUserId } from '../../utils/authHelpers';
 import CollectionsService from '../../services/collectionsService';
+import { useTheme } from '../../hooks/useTheme';
 
 const CreateCollectionScreen: React.FC = () => {
   const navigation = useNavigation();
   const { user, isAuthenticated } = useAppSelector((state) => state.auth);
+  const { colors } = useTheme();
   
   // Form state
   const [name, setName] = useState('');
@@ -108,36 +110,40 @@ const CreateCollectionScreen: React.FC = () => {
 
   if (!user?.id) {
     return (
-      <SafeAreaView style={styles.container}>
+      <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
         <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color="#007AFF" />
-          <Text style={styles.loadingText}>Checking session...</Text>
+          <ActivityIndicator size="large" color={colors.primary} />
+          <Text style={[styles.loadingText, { color: colors.textTertiary }]}>Checking session...</Text>
         </View>
       </SafeAreaView>
     );
   }
 
   return (
-    <SafeAreaView style={styles.container}>
+    <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
       <KeyboardAvoidingView 
         style={styles.container} 
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
       >
         {/* Header */}
-        <View style={styles.header}>
+        <View style={[styles.header, { borderBottomColor: colors.surfaceSecondary }]}>
           <TouchableOpacity onPress={handleCancel} style={styles.headerButton}>
-            <Icon name="close" size={24} color="#007AFF" />
+            <Icon name="close" size={24} color={colors.primary} />
           </TouchableOpacity>
-          <Text style={styles.headerTitle}>New Collection</Text>
+          <Text style={[styles.headerTitle, { color: colors.textPrimary }]}>New Collection</Text>
           <TouchableOpacity 
             onPress={handleSave} 
             style={[styles.headerButton, styles.saveButton]}
             disabled={!name.trim() || !!nameError || isSaving}
           >
             {isSaving ? (
-              <ActivityIndicator size="small" color="#007AFF" />
+              <ActivityIndicator size="small" color={colors.primary} />
             ) : (
-              <Text style={[styles.saveButtonText, (!name.trim() || !!nameError) && styles.saveButtonTextDisabled]}>
+              <Text style={[
+                styles.saveButtonText, 
+                { color: colors.primary },
+                (!name.trim() || !!nameError) && { color: colors.textTertiary }
+              ]}>
                 Create
               </Text>
             )}
@@ -147,39 +153,47 @@ const CreateCollectionScreen: React.FC = () => {
         <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
           {/* Collection Name */}
           <View style={styles.inputGroup}>
-            <Text style={styles.label}>Collection Name *</Text>
+            <Text style={[styles.label, { color: colors.textPrimary }]}>Collection Name *</Text>
             <TextInput
-              style={[styles.input, nameError && styles.inputError]}
+              style={[
+                styles.input, 
+                { backgroundColor: colors.surfaceSecondary, color: colors.textPrimary },
+                nameError && { borderColor: colors.warning }
+              ]}
               value={name}
               onChangeText={validateName}
               placeholder="e.g., Weekend Reading, Recipe Ideas"
-              placeholderTextColor="#8E8E93"
+              placeholderTextColor={colors.textTertiary}
               returnKeyType="next"
               maxLength={50}
             />
             {nameError && (
-              <Text style={styles.errorText}>{nameError}</Text>
+              <Text style={[styles.errorText, { color: colors.warning }]}>{nameError}</Text>
             )}
-            <Text style={styles.helpText}>
+            <Text style={[styles.helpText, { color: colors.textTertiary }]}>
               {name.length}/50 characters
             </Text>
           </View>
 
           {/* Description */}
           <View style={styles.inputGroup}>
-            <Text style={styles.label}>Description (Optional)</Text>
+            <Text style={[styles.label, { color: colors.textPrimary }]}>Description (Optional)</Text>
             <TextInput
-              style={[styles.input, styles.textArea]}
+              style={[
+                styles.input, 
+                styles.textArea,
+                { backgroundColor: colors.surfaceSecondary, color: colors.textPrimary }
+              ]}
               value={description}
               onChangeText={setDescription}
               placeholder="Add a description to help you remember what this collection is for..."
-              placeholderTextColor="#8E8E93"
+              placeholderTextColor={colors.textTertiary}
               multiline={true}
               numberOfLines={4}
               maxLength={200}
               textAlignVertical="top"
             />
-            <Text style={styles.helpText}>
+            <Text style={[styles.helpText, { color: colors.textTertiary }]}>
               {description.length}/200 characters
             </Text>
           </View>
@@ -188,47 +202,47 @@ const CreateCollectionScreen: React.FC = () => {
           <View style={styles.inputGroup}>
             <View style={styles.switchRow}>
               <View style={styles.switchContent}>
-                <Text style={styles.label}>Make Public</Text>
-                <Text style={styles.helpText}>
+                <Text style={[styles.label, { color: colors.textPrimary }]}>Make Public</Text>
+                <Text style={[styles.helpText, { color: colors.textTertiary }]}>
                   Public collections can be viewed by anyone with the link
                 </Text>
               </View>
               <Switch
                 value={isPublic}
                 onValueChange={setIsPublic}
-                trackColor={{ false: '#E5E5EA', true: '#34C759' }}
-                thumbColor={isPublic ? '#FFFFFF' : '#FFFFFF'}
-                ios_backgroundColor="#E5E5EA"
+                trackColor={{ false: colors.surfaceSecondary, true: colors.accent }}
+                thumbColor="#FFFFFF"
+                ios_backgroundColor={colors.surfaceSecondary}
               />
             </View>
           </View>
 
           {/* Preview */}
           <View style={styles.previewSection}>
-            <Text style={styles.previewTitle}>Preview</Text>
-            <View style={styles.previewCard}>
+            <Text style={[styles.previewTitle, { color: colors.textPrimary }]}>Preview</Text>
+            <View style={[styles.previewCard, { backgroundColor: colors.surface }]}>
               <View style={styles.previewHeader}>
-                <View style={[styles.previewIcon, { backgroundColor: '#007AFF' }]}>
+                <View style={[styles.previewIcon, { backgroundColor: colors.primary }]}>
                   <Icon name={isPublic ? 'public' : 'folder'} size={20} color="#FFFFFF" />
                 </View>
                 <View style={styles.previewContent}>
-                  <Text style={styles.previewName}>
+                  <Text style={[styles.previewName, { color: colors.textPrimary }]}>
                     {name.trim() || 'Collection Name'}
                   </Text>
-                  <Text style={styles.previewCount}>0 links</Text>
+                  <Text style={[styles.previewCount, { color: colors.textTertiary }]}>0 links</Text>
                 </View>
               </View>
               {(description.trim() || !name.trim()) && (
-                <Text style={styles.previewDescription}>
+                <Text style={[styles.previewDescription, { color: colors.textSecondary }]}>
                   {description.trim() || 'Add a description to help you remember what this collection is for...'}
                 </Text>
               )}
               <View style={styles.previewFooter}>
-                <Text style={styles.previewDate}>Created just now</Text>
+                <Text style={[styles.previewDate, { color: colors.textTertiary }]}>Created just now</Text>
                 {isPublic && (
-                  <View style={styles.previewBadge}>
-                    <Icon name="public" size={10} color="#007AFF" />
-                    <Text style={styles.previewBadgeText}>Public</Text>
+                  <View style={[styles.previewBadge, { backgroundColor: colors.surfaceSecondary }]}>
+                    <Icon name="public" size={10} color={colors.primary} />
+                    <Text style={[styles.previewBadgeText, { color: colors.primary }]}>Public</Text>
                   </View>
                 )}
               </View>
@@ -243,7 +257,6 @@ const CreateCollectionScreen: React.FC = () => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#ffffff',
   },
   loadingContainer: {
     flex: 1,
@@ -254,7 +267,6 @@ const styles = StyleSheet.create({
   loadingText: {
     marginTop: 12,
     fontSize: 16,
-    color: '#8E8E93',
   },
   header: {
     flexDirection: 'row',
@@ -263,7 +275,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingVertical: 12,
     borderBottomWidth: 1,
-    borderBottomColor: '#E5E5EA',
   },
   headerButton: {
     padding: 8,
@@ -272,7 +283,6 @@ const styles = StyleSheet.create({
   headerTitle: {
     fontSize: 18,
     fontWeight: '600',
-    color: '#1C1C1E',
   },
   saveButton: {
     alignItems: 'flex-end',
@@ -280,10 +290,9 @@ const styles = StyleSheet.create({
   saveButtonText: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#007AFF',
   },
   saveButtonTextDisabled: {
-    color: '#8E8E93',
+    // Handled dynamically
   },
   content: {
     flex: 1,
@@ -295,21 +304,18 @@ const styles = StyleSheet.create({
   label: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#1C1C1E',
     marginBottom: 8,
   },
   input: {
-    backgroundColor: '#F2F2F7',
     borderRadius: 10,
     paddingHorizontal: 16,
     paddingVertical: 12,
     fontSize: 16,
-    color: '#1C1C1E',
     borderWidth: 1,
     borderColor: 'transparent',
   },
   inputError: {
-    borderColor: '#FF3B30',
+    // Handled dynamically
   },
   textArea: {
     height: 100,
@@ -318,12 +324,10 @@ const styles = StyleSheet.create({
   errorText: {
     marginTop: 4,
     fontSize: 14,
-    color: '#FF3B30',
   },
   helpText: {
     marginTop: 4,
     fontSize: 12,
-    color: '#8E8E93',
   },
   switchRow: {
     flexDirection: 'row',
@@ -341,15 +345,15 @@ const styles = StyleSheet.create({
   previewTitle: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#1C1C1E',
+    // color: handled dynamically,
     marginBottom: 12,
   },
   previewCard: {
-    backgroundColor: '#F8F9FA',
+    // backgroundColor: handled dynamically,
     borderRadius: 12,
     padding: 16,
     borderWidth: 1,
-    borderColor: '#E5E5EA',
+    borderColor: 'transparent',
   },
   previewHeader: {
     flexDirection: 'row',
@@ -370,16 +374,16 @@ const styles = StyleSheet.create({
   previewName: {
     fontSize: 14,
     fontWeight: '600',
-    color: '#1C1C1E',
+    // color: handled dynamically,
     marginBottom: 2,
   },
   previewCount: {
     fontSize: 11,
-    color: '#8E8E93',
+    // color: handled dynamically,
   },
   previewDescription: {
     fontSize: 12,
-    color: '#8E8E93',
+    // color: handled dynamically,
     lineHeight: 16,
     marginBottom: 12,
     fontStyle: 'italic',
@@ -391,19 +395,19 @@ const styles = StyleSheet.create({
   },
   previewDate: {
     fontSize: 11,
-    color: '#8E8E93',
+    // color: handled dynamically,
   },
   previewBadge: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#F2F2F7',
+    // backgroundColor: handled dynamically,
     paddingHorizontal: 4,
     paddingVertical: 2,
     borderRadius: 3,
   },
   previewBadgeText: {
     fontSize: 9,
-    color: '#007AFF',
+    // color: handled dynamically,
     marginLeft: 2,
     fontWeight: '500',
   },

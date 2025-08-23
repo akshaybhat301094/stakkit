@@ -9,7 +9,6 @@ import {
 import { MaterialIcons as Icon } from '@expo/vector-icons';
 import { Collection } from '../types/database';
 import { 
-  Colors, 
   Typography, 
   Spacing, 
   BorderRadius, 
@@ -17,6 +16,7 @@ import {
   getCollectionColor,
   CommonStyles 
 } from './DesignSystem';
+import { useTheme } from '../hooks/useTheme';
 
 interface ModernCollectionCardProps {
   collection: Collection & { linkCount: number };
@@ -35,6 +35,8 @@ const ModernCollectionCard: React.FC<ModernCollectionCardProps> = ({
   size = 'medium',
   index = 0 
 }) => {
+  const { colors, isDark } = useTheme();
+  
   const handlePress = () => {
     onPress?.(collection);
   };
@@ -68,6 +70,10 @@ const ModernCollectionCard: React.FC<ModernCollectionCardProps> = ({
 
   const cardDimensions = getCardDimensions();
   const collectionColor = getCollectionColor(index);
+  
+  // Use dark icons that will be visible against the colored collection backgrounds
+  const iconColor = '#FFFFFF'; // Always use white for maximum contrast
+  const iconBackgroundColor = 'rgba(0, 0, 0, 0.2)'; // Dark semi-transparent background for better visibility
   
   const formatDate = (dateString: string): string => {
     const date = new Date(dateString);
@@ -106,35 +112,35 @@ const ModernCollectionCard: React.FC<ModernCollectionCardProps> = ({
         {/* Header */}
         <View style={[CommonStyles.row, CommonStyles.spaceBetween]}>
           <View style={styles.headerLeft}>
-            <View style={styles.iconContainer}>
-              <Icon name={getCollectionIcon()} size={24} color={Colors.surface} />
+            <View style={[styles.iconContainer, { backgroundColor: iconBackgroundColor }]}>
+              <Icon name={getCollectionIcon()} size={24} color={iconColor} />
             </View>
             
             {/* Link count badge */}
-            <View style={styles.linkCountBadge}>
-              <Text style={styles.linkCountBadgeText}>
+            <View style={[styles.linkCountBadge, { backgroundColor: iconBackgroundColor }]}>
+              <Text style={[styles.linkCountBadgeText, { color: iconColor }]}>
                 {collection.linkCount}
               </Text>
             </View>
           </View>
           
           {collection.is_public && (
-            <View style={styles.publicBadge}>
-              <Icon name="public" size={12} color={Colors.surface} />
+            <View style={[styles.publicBadge, { backgroundColor: iconBackgroundColor }]}>
+              <Icon name="public" size={12} color={iconColor} />
             </View>
           )}
         </View>
 
         {/* Title */}
         <View style={styles.titleSection}>
-          <Text style={styles.title} numberOfLines={size === 'small' ? 2 : 3}>
+          <Text style={[styles.title, { color: iconColor }]} numberOfLines={size === 'small' ? 2 : 3}>
             {collection.name}
           </Text>
         </View>
 
         {/* Footer */}
         <View style={styles.footer}>
-          <Text style={styles.date}>
+          <Text style={[styles.date, { color: iconColor }]}>
             {formatDate(collection.created_at)}
           </Text>
         </View>
@@ -182,7 +188,6 @@ const styles = StyleSheet.create({
     width: 40,
     height: 40,
     borderRadius: BorderRadius.sm,
-    backgroundColor: 'rgba(255, 255, 255, 0.2)',
     justifyContent: 'center',
     alignItems: 'center',
   },
@@ -190,7 +195,6 @@ const styles = StyleSheet.create({
     width: 24,
     height: 24,
     borderRadius: 12,
-    backgroundColor: 'rgba(255, 255, 255, 0.2)',
     justifyContent: 'center',
     alignItems: 'center',
   },
@@ -202,14 +206,11 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 18,
     fontWeight: '700',
-    color: Colors.surface,
     marginBottom: Spacing.xs,
     textShadowColor: 'rgba(0, 0, 0, 0.3)',
     textShadowOffset: { width: 0, height: 1 },
     textShadowRadius: 2,
   },
-
-  
   footer: {
     marginTop: 'auto',
     marginBottom: 0,
@@ -217,7 +218,6 @@ const styles = StyleSheet.create({
   date: {
     fontSize: 12,
     fontWeight: '500',
-    color: Colors.surface,
     opacity: 0.8,
     marginBottom: Spacing.xs,
   },
@@ -225,17 +225,15 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
   },
-     linkCountBadge: {
-     backgroundColor: 'rgba(255, 255, 255, 0.2)',
-     borderRadius: 12,
-     paddingHorizontal: Spacing.xs,
-     paddingVertical: 2,
-     marginLeft: Spacing.xs,
-   },
+  linkCountBadge: {
+    borderRadius: 12,
+    paddingHorizontal: Spacing.xs,
+    paddingVertical: 2,
+    marginLeft: Spacing.xs,
+  },
   linkCountBadgeText: {
     fontSize: 12,
     fontWeight: '600',
-    color: Colors.surface,
   },
 });
 
