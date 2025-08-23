@@ -62,15 +62,16 @@
     "react-native-svg": "^15.12.0",
     "react-native-svg-transformer": "^1.5.1",
     "react-native-url-polyfill": "^2.0.0",
-
+    "react-native-video": "^6.16.1",
     "react-native-web": "^0.20.0",
-    "react-redux": "^9.0.4"
+    "react-redux": "^9.0.4",
+    "expo-av": "~15.1.7",
+    "expo-linear-gradient": "~14.1.5"
   },
   "devDependencies": {
     "@babel/core": "^7.25.2",
     "@expo/metro-runtime": "^5.0.4",
     "@types/react": "~19.0.10",
-
     "typescript": "~5.8.3"
   },
   "private": true

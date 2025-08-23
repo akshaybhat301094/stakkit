@@ -18,6 +18,7 @@ import { MainStackParamList } from '../../navigation/MainNavigator';
 import { Collection } from '../../types/database';
 import ModernCollectionCard from '../../components/ModernCollectionCard';
 import { CollectionLoadingSkeleton } from '../../components/LoadingCard';
+import EmptyState from '../../components/EmptyState';
 import { CollectionsService } from '../../services/collectionsService';
 import { useAppSelector } from '../../store/hooks';
 import { 
@@ -28,6 +29,7 @@ import {
   Shadows, 
   CommonStyles 
 } from '../../components/DesignSystem';
+import { useScrollToHide } from '../../hooks/useScrollToHide';
 
 type CollectionsScreenNavigationProp = StackNavigationProp<MainStackParamList, 'MainTabs'>;
 
@@ -50,6 +52,7 @@ const CollectionsScreen: React.FC = () => {
     error: null,
   });
   const fetchInProgressRef = useRef(false);
+  const { onScroll } = useScrollToHide();
 
   const fetchCollections = async (isRefreshing = false) => {
     if (fetchInProgressRef.current && !isRefreshing) {
@@ -239,19 +242,13 @@ const CollectionsScreen: React.FC = () => {
   };
 
   const renderEmptyState = () => (
-    <View style={styles.emptyState}>
-      <View style={styles.emptyIconContainer}>
-        <Icon name="folder-open" size={64} color={Colors.textLight} />
-      </View>
-      <Text style={styles.emptyTitle}>Start organizing</Text>
-      <Text style={styles.emptyDescription}>
-        Create collections to organize your saved links by topic, project, or any way you like.
-      </Text>
-      <TouchableOpacity style={styles.createButton} onPress={handleCreateCollection}>
-        <Icon name="add" size={20} color={Colors.surface} />
-        <Text style={styles.createButtonText}>Create Collection</Text>
-      </TouchableOpacity>
-    </View>
+    <EmptyState
+      icon="folder-open"
+      title="Start organizing"
+      description="Create collections to organize your saved links by topic, project, or any way you like."
+      buttonText="Create Collection"
+      onButtonPress={handleCreateCollection}
+    />
   );
 
   const renderErrorState = () => (
@@ -324,6 +321,8 @@ const CollectionsScreen: React.FC = () => {
             />
           }
           showsVerticalScrollIndicator={false}
+          onScroll={onScroll}
+          scrollEventThrottle={16}
         >
           {state.collections.length === 0 ? (
             renderEmptyState()
@@ -335,10 +334,7 @@ const CollectionsScreen: React.FC = () => {
         </ScrollView>
       )}
 
-      {/* Floating Action Button */}
-      <TouchableOpacity style={styles.fab} onPress={handleAddLink}>
-        <Icon name="add" size={24} color={Colors.surface} />
-      </TouchableOpacity>
+      {/* Remove the FAB since we have the add button in the menu bar */}
     </SafeAreaView>
   );
 };
@@ -380,7 +376,7 @@ const styles = StyleSheet.create({
   },
   scrollContent: {
     paddingTop: Spacing.lg,
-    paddingBottom: 100, // Space for FAB
+    paddingBottom: 120, // Increased padding for floating menu bar
   },
   emptyScrollContent: {
     flex: 1,
@@ -398,45 +394,7 @@ const styles = StyleSheet.create({
     width: (screenWidth - (Spacing.md * 2)) / 2, // For 2-column grid
     paddingHorizontal: Spacing.sm / 2, // Add gap between cards
   },
-  emptyState: {
-    alignItems: 'center',
-    paddingHorizontal: Spacing.xl,
-    paddingVertical: Spacing.xxl,
-  },
-  emptyIconContainer: {
-    width: 120,
-    height: 120,
-    borderRadius: 60,
-    backgroundColor: Colors.surfaceSecondary,
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginBottom: Spacing.lg,
-  },
-  emptyTitle: {
-    ...Typography.h2,
-    marginBottom: Spacing.sm,
-  },
-  emptyDescription: {
-    ...Typography.body,
-    textAlign: 'center',
-    marginBottom: Spacing.xl,
-    lineHeight: 24,
-  },
-  createButton: {
-    backgroundColor: Colors.primary,
-    paddingHorizontal: Spacing.lg,
-    paddingVertical: Spacing.md,
-    borderRadius: BorderRadius.md,
-    flexDirection: 'row',
-    alignItems: 'center',
-    ...Shadows.small,
-  },
-  createButtonText: {
-    color: Colors.surface,
-    fontSize: 16,
-    fontWeight: '600',
-    marginLeft: Spacing.sm,
-  },
+
   errorState: {
     flex: 1,
     justifyContent: 'center',
