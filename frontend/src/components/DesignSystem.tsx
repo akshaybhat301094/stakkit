@@ -1,8 +1,8 @@
 import React from 'react';
 import { StyleSheet, ViewStyle, TextStyle } from 'react-native';
 
-// Color palette inspired by modern design
-export const Colors = {
+// Light theme colors
+export const LightColors = {
   // Primary colors
   primary: '#007AFF',
   secondary: '#34C759',
@@ -19,32 +19,58 @@ export const Colors = {
   textSecondary: '#3C3C43',
   textTertiary: '#8E8E93',
   textLight: '#C7C7CC',
+};
+
+// Dark theme colors
+export const DarkColors = {
+  // Primary colors
+  primary: '#0A84FF',
+  secondary: '#30D158',
+  accent: '#FF9F0A',
+  warning: '#FF453A',
   
-  // Collection colors (inspired by the screenshot)
-  collectionColors: [
-    '#FF6B6B', // Coral
-    '#4ECDC4', // Teal
-    '#45B7D1', // Blue
-    '#96CEB4', // Mint
-    '#FFEAA7', // Yellow
-    '#DDA0DD', // Plum
-    '#FFB6C1', // Pink
-    '#98D8C8', // Sage
-    '#F7DC6F', // Gold
-    '#BB8FCE', // Lavender
-  ],
+  // Neutral colors
+  background: '#000000',
+  surface: '#1C1C1E',
+  surfaceSecondary: '#2C2C2E',
   
-  // Smart tag colors
-  tagColors: {
-    water: '#4ECDC4',
-    blue: '#45B7D1',
-    purple: '#BB8FCE',
-    plant: '#96CEB4',
-    nature: '#52C41A',
-    tech: '#1890FF',
-    design: '#722ED1',
-    food: '#FA8C16',
-  },
+  // Text colors
+  textPrimary: '#FFFFFF',
+  textSecondary: '#EBEBF5',
+  textTertiary: '#8E8E93',
+  textLight: '#48484A',
+};
+
+// Function to get theme colors based on isDark
+export const getThemeColors = (isDark: boolean) => isDark ? DarkColors : LightColors;
+
+// Default export for backward compatibility
+export const Colors = LightColors;
+
+// Collection colors (work well in both themes)
+export const CollectionColors = [
+  '#FF6B6B', // Coral
+  '#4ECDC4', // Teal
+  '#45B7D1', // Blue
+  '#96CEB4', // Mint
+  '#FFEAA7', // Yellow
+  '#DDA0DD', // Plum
+  '#FFB6C1', // Pink
+  '#98D8C8', // Sage
+  '#F7DC6F', // Gold
+  '#BB8FCE', // Lavender
+];
+
+// Smart tag colors (work well in both themes)
+export const TagColors = {
+  water: '#4ECDC4',
+  blue: '#45B7D1',
+  purple: '#BB8FCE',
+  plant: '#96CEB4',
+  nature: '#52C41A',
+  tech: '#1890FF',
+  design: '#722ED1',
+  food: '#FA8C16',
 };
 
 // Typography system
@@ -164,17 +190,17 @@ export const Grid = {
 
 // Utility functions
 export const getCollectionColor = (index: number): string => {
-  return Colors.collectionColors[index % Colors.collectionColors.length];
+  return CollectionColors[index % CollectionColors.length];
 };
 
 export const getTagColor = (tag: string): string => {
   const lowercaseTag = tag.toLowerCase();
-  for (const [key, color] of Object.entries(Colors.tagColors)) {
+  for (const [key, color] of Object.entries(TagColors)) {
     if (lowercaseTag.includes(key)) {
       return color;
     }
   }
-  return Colors.primary;
+  return LightColors.primary; // Default fallback
 };
 
 // Common styles

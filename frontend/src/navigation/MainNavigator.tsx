@@ -8,6 +8,7 @@ import { useNavigation, NavigationProp } from '@react-navigation/native';
 import { Video, AVPlaybackStatus, ResizeMode } from 'expo-av';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useScrollToHide } from '../hooks/useScrollToHide';
+import { useTheme } from '../hooks/useTheme';
 
 // Import screens
 import HomeScreen from '../screens/main/HomeScreen';
@@ -73,19 +74,13 @@ const AddButton = ({ onPress }: { onPress: () => void }) => {
           styles.videoBackground,
           isLoading && styles.hidden
         ]}
-        repeat
-        resizeMode="cover"
-        muted
-        controls={false}
+        isLooping
+        resizeMode={ResizeMode.COVER}
+        isMuted
+        useNativeControls={false}
         onLoadStart={onLoadStart}
         onLoad={onLoad}
         onError={onError}
-        bufferConfig={{
-          minBufferMs: 1000,
-          maxBufferMs: 5000,
-          bufferForPlaybackMs: 1000,
-          bufferForPlaybackAfterRebufferMs: 2000
-        }}
       />
       <View style={[
         styles.background,
@@ -104,6 +99,7 @@ const AddButton = ({ onPress }: { onPress: () => void }) => {
 const CustomTabBar = ({ state, descriptors, navigation, translateY }: any) => {
   const [status, setStatus] = useState<AVPlaybackStatus>({} as AVPlaybackStatus);
   const shadowAnim = useRef(new Animated.Value(0)).current;
+  const { colors } = useTheme();
 
   useEffect(() => {
     const animate = () => {
@@ -135,6 +131,7 @@ const CustomTabBar = ({ state, descriptors, navigation, translateY }: any) => {
     <Animated.View style={[
       styles.tabBarContainer,
       {
+        backgroundColor: colors.surface,
         transform: [{ translateY }],
       }
     ]}>
@@ -147,25 +144,12 @@ const CustomTabBar = ({ state, descriptors, navigation, translateY }: any) => {
             <Icon
               name="collections-bookmark"
               size={28}
-              color={state.index === 0 ? '#FFFFFF' : '#8E8E93'}
+              color={state.index === 0 ? colors.primary : colors.textTertiary}
             />
           </TouchableOpacity>
         </View>
 
         <View style={styles.centerContainer}>
-          <TouchableOpacity
-            style={styles.tabButton}
-            onPress={() => navigation.navigate('Profile')}
-          >
-            <Icon
-              name="person"
-              size={28}
-              color={state.index === 2 ? '#FFFFFF' : '#8E8E93'}
-            />
-          </TouchableOpacity>
-        </View>
-
-        <View style={styles.rightContainer}>
           <Animated.View style={[
             styles.addButtonContainer,
             {
@@ -202,6 +186,19 @@ const CustomTabBar = ({ state, descriptors, navigation, translateY }: any) => {
               <Icon name="add" size={32} color="rgba(255, 255, 255, 0.9)" />
             </TouchableOpacity>
           </Animated.View>
+        </View>
+
+        <View style={styles.rightContainer}>
+          <TouchableOpacity
+            style={styles.tabButton}
+            onPress={() => navigation.navigate('Profile')}
+          >
+            <Icon
+              name="person"
+              size={28}
+              color={state.index === 2 ? colors.primary : colors.textTertiary}
+            />
+          </TouchableOpacity>
         </View>
       </View>
     </Animated.View>
@@ -258,10 +255,9 @@ const MainTabs: React.FC = () => {
 const styles = StyleSheet.create({
   tabBarContainer: {
     position: 'absolute',
-    bottom: 80, // Increased from 64 to 80 to move it higher
+    bottom: 80,
     left: 16,
     right: 16,
-    backgroundColor: '#000000',
     borderRadius: 40,
     height: 72,
     shadowColor: '#000',
@@ -279,7 +275,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingLeft: 20, // Added to balance the space
+    paddingHorizontal: 10,
   },
   sideContainer: {
     width: 60,
@@ -288,20 +284,16 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   centerContainer: {
-    position: 'absolute',
-    left: 0,
-    right: 0,
-    height: '100%',
-    justifyContent: 'center',
-    alignItems: 'center',
-    zIndex: 0,
-  },
-  rightContainer: {
     width: 80,
     height: '100%',
     justifyContent: 'center',
-    alignItems: 'flex-end',
-    paddingRight: 0, // Removed padding completely
+    alignItems: 'center',
+  },
+  rightContainer: {
+    width: 60,
+    height: '100%',
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   tabButton: {
     width: '100%',
@@ -315,7 +307,6 @@ const styles = StyleSheet.create({
     borderRadius: 26,
     overflow: 'visible',
     marginTop: 0,
-    marginRight: -8, // Added negative margin to pull it left
     shadowColor: '#FFB5D0',
     shadowOffset: {
       width: 0,

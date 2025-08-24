@@ -22,7 +22,6 @@ import { AddToCollectionModal } from '../../components/AddToCollectionModal';
 import { LinksService } from '../../services/linksService';
 import { useAppSelector } from '../../store/hooks';
 import { 
-  Colors, 
   Typography, 
   Spacing, 
   BorderRadius, 
@@ -30,6 +29,7 @@ import {
   getCollectionColor,
   CommonStyles 
 } from '../../components/DesignSystem';
+import { useTheme } from '../../hooks/useTheme';
 
 type CollectionDetailScreenNavigationProp = StackNavigationProp<MainStackParamList, 'CollectionDetail'>;
 
@@ -62,6 +62,7 @@ const CollectionDetailScreen: React.FC = () => {
     selectedLinkForCollection: null,
   });
   const fetchInProgressRef = useRef(false);
+  const { colors } = useTheme();
 
   const fetchCollectionLinks = async (isRefreshing = false) => {
     if (fetchInProgressRef.current && !isRefreshing) {
@@ -255,33 +256,33 @@ const CollectionDetailScreen: React.FC = () => {
 
   const renderEmptyState = () => (
     <View style={styles.emptyState}>
-      <View style={styles.emptyIconContainer}>
-        <Icon name="bookmark-border" size={64} color={Colors.textLight} />
+      <View style={[styles.emptyIconContainer, { backgroundColor: colors.surfaceSecondary }]}>
+        <Icon name="bookmark-border" size={64} color={colors.textLight} />
       </View>
-      <Text style={styles.emptyTitle}>No links yet</Text>
-      <Text style={styles.emptyDescription}>
+      <Text style={[styles.emptyTitle, { color: colors.textPrimary }]}>No links yet</Text>
+      <Text style={[styles.emptyDescription, { color: colors.textSecondary }]}>
         Add links to "{collection.name}" to see them here
       </Text>
-      <TouchableOpacity style={styles.addButton} onPress={handleAddLink}>
-        <Icon name="add" size={20} color={Colors.surface} />
-        <Text style={styles.addButtonText}>Add Link</Text>
+      <TouchableOpacity style={[styles.addButton, { backgroundColor: colors.primary }]} onPress={handleAddLink}>
+        <Icon name="add" size={20} color={colors.surface} />
+        <Text style={[styles.addButtonText, { color: colors.surface }]}>Add Link</Text>
       </TouchableOpacity>
     </View>
   );
 
   const renderErrorState = () => (
     <View style={styles.errorState}>
-      <Icon name="error-outline" size={64} color={Colors.warning} />
-      <Text style={styles.errorTitle}>Unable to load links</Text>
-      <Text style={styles.errorDescription}>{state.error}</Text>
+      <Icon name="error-outline" size={64} color={colors.warning} />
+      <Text style={[styles.errorTitle, { color: colors.textPrimary }]}>Unable to load links</Text>
+      <Text style={[styles.errorDescription, { color: colors.textSecondary }]}>{state.error}</Text>
       
-      <TouchableOpacity style={styles.retryButton} onPress={() => fetchCollectionLinks()}>
-        <Text style={styles.retryButtonText}>Try Again</Text>
+      <TouchableOpacity style={[styles.retryButton, { backgroundColor: colors.primary }]} onPress={() => fetchCollectionLinks()}>
+        <Text style={[styles.retryButtonText, { color: colors.surface }]}>Try Again</Text>
       </TouchableOpacity>
       
       {(state.error?.includes('sign in') || state.error?.includes('session has expired')) && (
-        <TouchableOpacity style={styles.signInButton} onPress={handleSignInAgain}>
-          <Text style={styles.signInButtonText}>Sign In Again</Text>
+        <TouchableOpacity style={[styles.signInButton, { backgroundColor: colors.warning }]} onPress={handleSignInAgain}>
+          <Text style={[styles.signInButtonText, { color: colors.surface }]}>Sign In Again</Text>
         </TouchableOpacity>
       )}
     </View>
@@ -307,84 +308,84 @@ const CollectionDetailScreen: React.FC = () => {
 
   if (state.loading) {
     return (
-      <SafeAreaView style={styles.container}>
-        <View style={styles.header}>
+      <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
+        <View style={[styles.header, { backgroundColor: colors.surface, borderBottomColor: colors.surfaceSecondary }]}>
           <TouchableOpacity onPress={handleBack} style={styles.backButton}>
-            <Icon name="arrow-back" size={24} color={Colors.primary} />
+            <Icon name="arrow-back" size={24} color={colors.primary} />
           </TouchableOpacity>
-          <Text style={styles.headerTitle} numberOfLines={1}>
+          <Text style={[styles.headerTitle, { color: colors.textPrimary }]} numberOfLines={1}>
             {collection.name}
           </Text>
           <TouchableOpacity onPress={handleShareCollection} style={styles.headerAction}>
-            <Icon name="share" size={24} color={Colors.primary} />
+            <Icon name="share" size={24} color={colors.primary} />
           </TouchableOpacity>
         </View>
 
-        <View style={styles.collectionInfo}>
+        <View style={[styles.collectionInfo, { backgroundColor: colors.surface, borderBottomColor: colors.surfaceSecondary }]}>
           <View style={styles.collectionHeader}>
             <View style={[styles.collectionIcon, { backgroundColor: collectionColor }]}>
-              <Icon name={getCollectionIcon()} size={28} color={Colors.surface} />
+              <Icon name={getCollectionIcon()} size={28} color="#FFFFFF" />
             </View>
             <View style={styles.collectionDetails}>
-              <Text style={styles.collectionName}>{collection.name}</Text>
-              <Text style={styles.collectionMeta}>
+              <Text style={[styles.collectionName, { color: colors.textPrimary }]}>{collection.name}</Text>
+              <Text style={[styles.collectionMeta, { color: colors.textTertiary }]}>
                 Loading links... • Created {formatDate(collection.created_at)}
               </Text>
             </View>
           </View>
           {collection.description && (
-            <Text style={styles.collectionDescription}>{collection.description}</Text>
+            <Text style={[styles.collectionDescription, { color: colors.textSecondary }]}>{collection.description}</Text>
           )}
           {collection.is_public && (
             <View style={styles.publicBadge}>
-              <Icon name="public" size={14} color={Colors.primary} />
-              <Text style={styles.publicBadgeText}>Public Collection</Text>
+              <Icon name="public" size={14} color={colors.primary} />
+              <Text style={[styles.publicBadgeText, { color: colors.primary }]}>Public Collection</Text>
             </View>
           )}
         </View>
         
         <LinksLoadingSkeleton count={4} />
         
-        <TouchableOpacity style={styles.fab} onPress={handleAddLink}>
-          <Icon name="add" size={24} color={Colors.surface} />
+        <TouchableOpacity style={[styles.fab, { backgroundColor: colors.primary }]} onPress={handleAddLink}>
+          <Icon name="add" size={24} color={colors.surface} />
         </TouchableOpacity>
       </SafeAreaView>
     );
   }
 
   return (
-    <SafeAreaView style={styles.container}>
-      <View style={styles.header}>
+    <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
+      <View style={[styles.header, { backgroundColor: colors.surface, borderBottomColor: colors.surfaceSecondary }]}>
         <TouchableOpacity onPress={handleBack} style={styles.backButton}>
-          <Icon name="arrow-back" size={24} color={Colors.primary} />
+          <Icon name="arrow-back" size={24} color={colors.primary} />
         </TouchableOpacity>
-        <Text style={styles.headerTitle} numberOfLines={1}>
+        <Text style={[styles.headerTitle, { color: colors.textPrimary }]} numberOfLines={1}>
           {collection.name}
         </Text>
         <TouchableOpacity onPress={handleShareCollection} style={styles.headerAction}>
-          <Icon name="share" size={24} color={Colors.primary} />
+          <Icon name="share" size={24} color={colors.primary} />
         </TouchableOpacity>
       </View>
 
-      <View style={styles.collectionInfo}>
+      <View style={[styles.collectionInfo, { backgroundColor: colors.surface, borderBottomColor: colors.surfaceSecondary }]}>
         <View style={styles.collectionHeader}>
           <View style={[styles.collectionIcon, { backgroundColor: collectionColor }]}>
-            <Icon name={getCollectionIcon()} size={28} color={Colors.surface} />
+            <Icon name={getCollectionIcon()} size={28} color="#FFFFFF" />
           </View>
           <View style={styles.collectionDetails}>
-            <Text style={styles.collectionName}>{collection.name}</Text>
-            <Text style={styles.collectionMeta}>
+            <Text style={[styles.collectionName, { color: colors.textPrimary }]}>{collection.name}</Text>
+            <Text style={[styles.collectionMeta, { color: colors.textTertiary }]}>
               {state.links.length} {state.links.length === 1 ? 'link' : 'links'} • Created {formatDate(collection.created_at)}
             </Text>
           </View>
         </View>
         {collection.description && (
-          <Text style={styles.collectionDescription}>{collection.description}</Text>
+          <Text style={[styles.collectionDescription, { color: colors.textSecondary }]}>{collection.description}</Text>
         )}
         {collection.is_public && (
           <View style={styles.publicBadge}>
-            <Icon name="public" size={14} color={Colors.primary} />
-            <Text style={styles.publicBadgeText}>Public Collection</Text>
+            <Icon name="public" size={14} color={colors.primary} />
+            <Text style={[styles.publicBadgeText, { color: colors.primary }]}>Public Collection</Text>
           </View>
         )}
       </View>
@@ -402,8 +403,8 @@ const CollectionDetailScreen: React.FC = () => {
             <RefreshControl
               refreshing={state.refreshing}
               onRefresh={handleRefresh}
-              colors={[Colors.primary]}
-              tintColor={Colors.primary}
+              colors={[colors.primary]}
+              tintColor={colors.primary}
             />
           }
           showsVerticalScrollIndicator={false}
@@ -418,8 +419,8 @@ const CollectionDetailScreen: React.FC = () => {
         </ScrollView>
       )}
       
-      <TouchableOpacity style={styles.fab} onPress={handleAddLink}>
-        <Icon name="add" size={24} color={Colors.surface} />
+      <TouchableOpacity style={[styles.fab, { backgroundColor: colors.primary }]} onPress={handleAddLink}>
+        <Icon name="add" size={24} color={colors.surface} />
       </TouchableOpacity>
 
       {state.showAddToCollectionModal && state.selectedLinkForCollection && (
@@ -436,17 +437,15 @@ const CollectionDetailScreen: React.FC = () => {
 
 const styles = StyleSheet.create({
   container: {
-    ...CommonStyles.container,
+    flex: 1,
   },
   header: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingHorizontal: Spacing.lg, // Increased from Spacing.md
-    paddingVertical: Spacing.md, // Increased from Spacing.sm
-    backgroundColor: Colors.surface,
+    paddingHorizontal: Spacing.lg,
+    paddingVertical: Spacing.md,
     borderBottomWidth: 1,
-    borderBottomColor: Colors.surfaceSecondary,
   },
   backButton: {
     padding: Spacing.sm,
@@ -464,10 +463,8 @@ const styles = StyleSheet.create({
     marginRight: -Spacing.sm,
   },
   collectionInfo: {
-    backgroundColor: Colors.surface,
-    padding: Spacing.xl, // Increased from Spacing.lg
+    padding: Spacing.xl,
     borderBottomWidth: 1,
-    borderBottomColor: Colors.surfaceSecondary,
   },
   collectionHeader: {
     flexDirection: 'row',
@@ -491,17 +488,16 @@ const styles = StyleSheet.create({
   },
   collectionMeta: {
     ...Typography.caption,
-    color: Colors.textTertiary,
   },
   collectionDescription: {
     ...Typography.body,
-    marginBottom: Spacing.lg, // Increased from Spacing.sm
-    lineHeight: 22, // Added line height for better readability
+    marginBottom: Spacing.lg,
+    lineHeight: 22,
   },
   publicBadge: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: Colors.surfaceSecondary,
+    // backgroundColor: handled dynamically,
     paddingHorizontal: Spacing.md, // Increased from Spacing.sm
     paddingVertical: Spacing.sm, // Increased from Spacing.xs
     borderRadius: BorderRadius.md, // Increased from BorderRadius.sm
@@ -510,7 +506,7 @@ const styles = StyleSheet.create({
   },
   publicBadgeText: {
     ...Typography.labelSmall,
-    color: Colors.primary,
+    // color: handled dynamically,
     marginLeft: Spacing.sm, // Increased from Spacing.xs
   },
   scrollView: {
@@ -545,7 +541,7 @@ const styles = StyleSheet.create({
     width: 120,
     height: 120,
     borderRadius: 60,
-    backgroundColor: Colors.surfaceSecondary,
+    // backgroundColor: handled dynamically,
     justifyContent: 'center',
     alignItems: 'center',
     marginBottom: Spacing.lg,
@@ -560,7 +556,7 @@ const styles = StyleSheet.create({
     marginBottom: Spacing.xl,
   },
   addButton: {
-    backgroundColor: Colors.primary,
+    // backgroundColor: handled dynamically,
     paddingHorizontal: Spacing.lg,
     paddingVertical: Spacing.md,
     borderRadius: BorderRadius.md,
@@ -569,7 +565,7 @@ const styles = StyleSheet.create({
     ...Shadows.small,
   },
   addButtonText: {
-    color: Colors.surface,
+    // color: handled dynamically,
     fontSize: 16,
     fontWeight: '600',
     marginLeft: Spacing.sm,
@@ -591,40 +587,35 @@ const styles = StyleSheet.create({
     marginBottom: Spacing.lg,
   },
   retryButton: {
-    backgroundColor: Colors.primary,
     paddingHorizontal: Spacing.lg,
     paddingVertical: Spacing.md,
     borderRadius: BorderRadius.md,
     marginBottom: Spacing.md,
   },
   retryButtonText: {
-    color: Colors.surface,
     fontSize: 16,
     fontWeight: '600',
   },
   signInButton: {
-    backgroundColor: Colors.warning,
     paddingHorizontal: Spacing.lg,
     paddingVertical: Spacing.md,
     borderRadius: BorderRadius.md,
   },
   signInButtonText: {
-    color: Colors.surface,
     fontSize: 16,
     fontWeight: '600',
   },
   fab: {
     position: 'absolute',
-    bottom: 40, // Increased from 30 for better spacing
-    right: 24, // Increased from 20 for better spacing
+    bottom: 40,
+    right: 24,
     width: 56,
     height: 56,
     borderRadius: 28,
-    backgroundColor: Colors.primary,
     justifyContent: 'center',
     alignItems: 'center',
     ...Shadows.large,
-    elevation: 8, // Added elevation for Android
+    elevation: 8,
   },
 });
 

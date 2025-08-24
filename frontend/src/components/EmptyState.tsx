@@ -7,12 +7,12 @@ import {
 } from 'react-native';
 import { MaterialIcons as Icon } from '@expo/vector-icons';
 import { 
-  Colors, 
   Typography, 
   Spacing, 
   BorderRadius, 
   Shadows 
 } from './DesignSystem';
+import { useTheme } from '../hooks/useTheme';
 
 interface EmptyStateProps {
   icon: keyof typeof Icon.glyphMap;
@@ -31,20 +31,23 @@ const EmptyState: React.FC<EmptyStateProps> = ({
   buttonText,
   onButtonPress,
   iconSize = 64,
-  iconColor = Colors.textLight
+  iconColor
 }) => {
+  const { colors } = useTheme();
+  const finalIconColor = iconColor || colors.textLight;
+
   return (
     <View style={styles.emptyState}>
-      <View style={styles.emptyIconContainer}>
-        <Icon name={icon} size={iconSize} color={iconColor} />
+      <View style={[styles.emptyIconContainer, { backgroundColor: colors.surfaceSecondary }]}>
+        <Icon name={icon} size={iconSize} color={finalIconColor} />
       </View>
-      <Text style={styles.emptyTitle}>{title}</Text>
-      <Text style={styles.emptyDescription}>
+      <Text style={[styles.emptyTitle, { color: colors.textPrimary }]}>{title}</Text>
+      <Text style={[styles.emptyDescription, { color: colors.textSecondary }]}>
         {description}
       </Text>
-      <TouchableOpacity style={styles.createButton} onPress={onButtonPress}>
-        <Icon name="add" size={20} color={Colors.surface} />
-        <Text style={styles.createButtonText}>{buttonText}</Text>
+      <TouchableOpacity style={[styles.createButton, { backgroundColor: colors.primary }]} onPress={onButtonPress}>
+        <Icon name="add" size={20} color={colors.surface} />
+        <Text style={[styles.createButtonText, { color: colors.surface }]}>{buttonText}</Text>
       </TouchableOpacity>
     </View>
   );
@@ -60,7 +63,6 @@ const styles = StyleSheet.create({
     width: 120,
     height: 120,
     borderRadius: 60,
-    backgroundColor: Colors.surfaceSecondary,
     justifyContent: 'center',
     alignItems: 'center',
     marginBottom: Spacing.lg,
@@ -76,7 +78,6 @@ const styles = StyleSheet.create({
     lineHeight: 24,
   },
   createButton: {
-    backgroundColor: Colors.primary,
     paddingHorizontal: Spacing.lg,
     paddingVertical: Spacing.md,
     borderRadius: BorderRadius.md,
@@ -85,7 +86,6 @@ const styles = StyleSheet.create({
     ...Shadows.small,
   },
   createButtonText: {
-    color: Colors.surface,
     fontSize: 16,
     fontWeight: '600',
     marginLeft: Spacing.sm,

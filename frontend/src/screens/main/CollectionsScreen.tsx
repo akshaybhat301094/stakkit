@@ -22,7 +22,6 @@ import EmptyState from '../../components/EmptyState';
 import { CollectionsService } from '../../services/collectionsService';
 import { useAppSelector } from '../../store/hooks';
 import { 
-  Colors, 
   Typography, 
   Spacing, 
   BorderRadius, 
@@ -30,6 +29,7 @@ import {
   CommonStyles 
 } from '../../components/DesignSystem';
 import { useScrollToHide } from '../../hooks/useScrollToHide';
+import { useTheme } from '../../hooks/useTheme';
 
 type CollectionsScreenNavigationProp = StackNavigationProp<MainStackParamList, 'MainTabs'>;
 
@@ -53,6 +53,7 @@ const CollectionsScreen: React.FC = () => {
   });
   const fetchInProgressRef = useRef(false);
   const { onScroll } = useScrollToHide();
+  const { colors } = useTheme();
 
   const fetchCollections = async (isRefreshing = false) => {
     if (fetchInProgressRef.current && !isRefreshing) {
@@ -253,17 +254,17 @@ const CollectionsScreen: React.FC = () => {
 
   const renderErrorState = () => (
     <View style={styles.errorState}>
-      <Icon name="error-outline" size={64} color={Colors.warning} />
-      <Text style={styles.errorTitle}>Unable to load collections</Text>
-      <Text style={styles.errorDescription}>{state.error}</Text>
+      <Icon name="error-outline" size={64} color={colors.warning} />
+      <Text style={[styles.errorTitle, { color: colors.textPrimary }]}>Unable to load collections</Text>
+      <Text style={[styles.errorDescription, { color: colors.textSecondary }]}>{state.error}</Text>
       
-      <TouchableOpacity style={styles.retryButton} onPress={() => fetchCollections()}>
-        <Text style={styles.retryButtonText}>Try Again</Text>
+      <TouchableOpacity style={[styles.retryButton, { backgroundColor: colors.primary }]} onPress={() => fetchCollections()}>
+        <Text style={[styles.retryButtonText, { color: colors.surface }]}>Try Again</Text>
       </TouchableOpacity>
       
       {(state.error?.includes('sign in') || state.error?.includes('session has expired')) && (
-        <TouchableOpacity style={styles.signInButton} onPress={handleSignInAgain}>
-          <Text style={styles.signInButtonText}>Sign In Again</Text>
+        <TouchableOpacity style={[styles.signInButton, { backgroundColor: colors.warning }]} onPress={handleSignInAgain}>
+          <Text style={[styles.signInButtonText, { color: colors.surface }]}>Sign In Again</Text>
         </TouchableOpacity>
       )}
     </View>
@@ -271,34 +272,30 @@ const CollectionsScreen: React.FC = () => {
 
   if (state.loading) {
     return (
-      <SafeAreaView style={styles.container}>
-        <View style={styles.header}>
-          <Text style={styles.headerTitle}>Collections</Text>
-          <Text style={styles.headerSubtitle}>Loading your collections...</Text>
+      <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
+        <View style={[styles.header, { backgroundColor: colors.surface, borderBottomColor: colors.surfaceSecondary }]}>
+          <Text style={[styles.headerTitle, { color: colors.textPrimary }]}>Collections</Text>
+          <Text style={[styles.headerSubtitle, { color: colors.textTertiary }]}>Loading your collections...</Text>
         </View>
         
         <CollectionLoadingSkeleton count={4} />
-        
-        <TouchableOpacity style={styles.fab} onPress={handleAddLink}>
-          <Icon name="add" size={24} color={Colors.surface} />
-        </TouchableOpacity>
       </SafeAreaView>
     );
   }
 
   return (
-    <SafeAreaView style={styles.container}>
+    <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
       {/* Header */}
-      <View style={styles.header}>
+      <View style={[styles.header, { backgroundColor: colors.surface, borderBottomColor: colors.surfaceSecondary }]}>
         <View>
-          <Text style={styles.headerTitle}>Collections</Text>
-          <Text style={styles.headerSubtitle}>
+          <Text style={[styles.headerTitle, { color: colors.textPrimary }]}>Collections</Text>
+          <Text style={[styles.headerSubtitle, { color: colors.textTertiary }]}>
             {state.collections.length} {state.collections.length === 1 ? 'collection' : 'collections'}
           </Text>
         </View>
         
-        <TouchableOpacity style={styles.headerButton} onPress={handleCreateCollection}>
-          <Icon name="create-new-folder" size={24} color={Colors.primary} />
+        <TouchableOpacity style={[styles.headerButton, { backgroundColor: colors.surfaceSecondary }]} onPress={handleCreateCollection}>
+          <Icon name="create-new-folder" size={24} color={colors.primary} />
         </TouchableOpacity>
       </View>
 
@@ -316,8 +313,8 @@ const CollectionsScreen: React.FC = () => {
             <RefreshControl
               refreshing={state.refreshing}
               onRefresh={handleRefresh}
-              colors={[Colors.primary]}
-              tintColor={Colors.primary}
+              colors={[colors.primary]}
+              tintColor={colors.primary}
             />
           }
           showsVerticalScrollIndicator={false}
@@ -341,10 +338,9 @@ const CollectionsScreen: React.FC = () => {
 
 const styles = StyleSheet.create({
   container: {
-    ...CommonStyles.container,
+    flex: 1,
   },
   header: {
-    backgroundColor: Colors.surface,
     paddingHorizontal: Spacing.lg,
     paddingTop: Spacing.md,
     paddingBottom: Spacing.md,
@@ -352,7 +348,6 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     alignItems: 'center',
     borderBottomWidth: 1,
-    borderBottomColor: Colors.surfaceSecondary,
   },
   headerTitle: {
     ...Typography.h1,
@@ -361,13 +356,11 @@ const styles = StyleSheet.create({
   },
   headerSubtitle: {
     ...Typography.caption,
-    color: Colors.textTertiary,
   },
   headerButton: {
     width: 44,
     height: 44,
     borderRadius: 22,
-    backgroundColor: Colors.surfaceSecondary,
     justifyContent: 'center',
     alignItems: 'center',
   },
@@ -412,25 +405,21 @@ const styles = StyleSheet.create({
     marginBottom: Spacing.lg,
   },
   retryButton: {
-    backgroundColor: Colors.primary,
     paddingHorizontal: Spacing.lg,
     paddingVertical: Spacing.md,
     borderRadius: BorderRadius.md,
     marginBottom: Spacing.md,
   },
   retryButtonText: {
-    color: Colors.surface,
     fontSize: 16,
     fontWeight: '600',
   },
   signInButton: {
-    backgroundColor: Colors.warning,
     paddingHorizontal: Spacing.lg,
     paddingVertical: Spacing.md,
     borderRadius: BorderRadius.md,
   },
   signInButtonText: {
-    color: Colors.surface,
     fontSize: 16,
     fontWeight: '600',
   },
@@ -441,7 +430,6 @@ const styles = StyleSheet.create({
     width: 56,
     height: 56,
     borderRadius: 28,
-    backgroundColor: Colors.primary,
     justifyContent: 'center',
     alignItems: 'center',
     ...Shadows.large,
