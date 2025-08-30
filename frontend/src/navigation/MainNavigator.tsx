@@ -19,6 +19,7 @@ import CreateCollectionScreen from '../screens/main/CreateCollectionScreen';
 import EditCollectionScreen from '../screens/main/EditCollectionScreen';
 import EditLinkScreen from '../screens/main/EditLinkScreen';
 import CollectionDetailScreen from '../screens/main/CollectionDetailScreen';
+import ShareLinkScreen from '../screens/main/ShareLinkScreen';
 import { Collection, Link } from '../types/database';
 
 export type MainTabParamList = {
@@ -41,6 +42,11 @@ export type MainStackParamList = {
   };
   CollectionDetail: {
     collection: Collection & { linkCount: number };
+  };
+  ShareLink: {
+    url: string;
+    title?: string;
+    description?: string;
   };
 };
 
@@ -449,6 +455,14 @@ const MainNavigator: React.FC = () => {
         name="CollectionDetail" 
         component={CollectionDetailScreen}
         options={{
+          headerShown: false,
+        }}
+      />
+      <Stack.Screen 
+        name="ShareLink" 
+        component={ShareLinkScreen}
+        options={{
+          presentation: 'modal',
           headerShown: false,
         }}
       />

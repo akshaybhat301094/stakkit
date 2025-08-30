@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Provider } from 'react-redux';
 import { registerRootComponent } from 'expo';
 import { store } from './src/store';
@@ -6,11 +6,18 @@ import AppNavigator from './src/navigation/AppNavigator';
 import ErrorBoundary from './src/components/ErrorBoundary';
 import ThemeProvider from './src/components/ThemeProvider';
 import SplashScreen from './src/components/SplashScreen';
+import DeepLinkService from './src/services/deepLinkService';
 import 'react-native-url-polyfill/auto';
 import { Platform } from 'react-native';
 
 function App() {
   const [isLoading, setIsLoading] = useState(true);
+
+  // Initialize deep linking
+  useEffect(() => {
+    const cleanup = DeepLinkService.initialize();
+    return cleanup;
+  }, []);
 
   const handleSplashComplete = () => {
     setIsLoading(false);

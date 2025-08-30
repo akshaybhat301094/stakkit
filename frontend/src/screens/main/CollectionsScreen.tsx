@@ -19,6 +19,7 @@ import { Collection } from '../../types/database';
 import ModernCollectionCard from '../../components/ModernCollectionCard';
 import { CollectionLoadingSkeleton } from '../../components/LoadingCard';
 import EmptyState from '../../components/EmptyState';
+import ShareTestButton from '../../components/ShareTestButton';
 import { CollectionsService } from '../../services/collectionsService';
 import { useAppSelector } from '../../store/hooks';
 import { 
@@ -324,9 +325,16 @@ const CollectionsScreen: React.FC = () => {
           {state.collections.length === 0 ? (
             renderEmptyState()
           ) : (
-            <View style={styles.gridContainer}>
-              {renderCollectionGrid()}
-            </View>
+            <>
+              {/* Test Share Feature Button (Development) */}
+              <View style={styles.testButtonContainer}>
+                <ShareTestButton />
+              </View>
+              
+              <View style={styles.gridContainer}>
+                {renderCollectionGrid()}
+              </View>
+            </>
           )}
         </ScrollView>
       )}
@@ -374,6 +382,10 @@ const styles = StyleSheet.create({
   emptyScrollContent: {
     flex: 1,
     justifyContent: 'center',
+  },
+  testButtonContainer: {
+    paddingHorizontal: Spacing.lg,
+    paddingVertical: Spacing.md,
   },
   gridContainer: {
     paddingHorizontal: Spacing.md,

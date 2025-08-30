@@ -1,0 +1,82 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<document type="com.apple.InterfaceBuilder3.CocoaTouch.Storyboard.XIB" version="3.0" toolsVersion="21507" targetRuntime="iOS.CocoaTouch" propertyAccessControl="none" useAutolayout="YES" useTraitCollections="YES" useSafeAreas="YES" colorMatched="YES" initialViewController="j1y-V4-xli">
+    <device id="retina6_12" orientation="portrait" appearance="light"/>
+    <dependencies>
+        <plugIn identifier="com.apple.InterfaceBuilder.IBCocoaTouchPlugin" version="21505"/>
+        <capability name="Safe area layout guides" minToolsVersion="9.0"/>
+        <capability name="System colors in document" minToolsVersion="11.0"/>
+        <capability name="documents saved in the Xcode 8 format" minToolsVersion="8.0"/>
+    </dependencies>
+    <scenes>
+        <!--Share View Controller-->
+        <scene sceneID="ceB-am-kn3">
+            <objects>
+                <viewController id="j1y-V4-xli" customClass="ShareViewController" customModule="ShareExtension" customModuleProvider="target" sceneMemberID="viewController">
+                    <view key="view" opaque="NO" contentMode="scaleToFill" id="wbc-yd-nQP">
+                        <rect key="frame" x="0.0" y="0.0" width="393" height="852"/>
+                        <autoresizingMask key="autoresizingMask" widthSizable="YES" heightSizable="YES"/>
+                        <subviews>
+                            <view contentMode="scaleToFill" translatesAutoresizingMaskIntoConstraints="NO" id="GKw-Ua-GJM">
+                                <rect key="frame" x="20" y="79" width="353" height="120"/>
+                                <subviews>
+                                    <imageView clipsSubviews="YES" userInteractionEnabled="NO" contentMode="scaleAspectFit" horizontalHuggingPriority="251" verticalHuggingPriority="251" image="stakkit-logo" translatesAutoresizingMaskIntoConstraints="NO" id="q7K-fP-dU6">
+                                        <rect key="frame" x="20" y="20" width="60" height="60"/>
+                                        <constraints>
+                                            <constraint firstAttribute="width" constant="60" id="3lQ-eL-gzJ"/>
+                                            <constraint firstAttribute="height" constant="60" id="Gkp-QT-YJM"/>
+                                        </constraints>
+                                    </imageView>
+                                    <label opaque="NO" userInteractionEnabled="NO" contentMode="left" horizontalHuggingPriority="251" verticalHuggingPriority="251" text="Save to Stakkit" textAlignment="natural" lineBreakMode="tailTruncation" baselineAdjustment="alignBaselines" adjustsFontSizeToFit="NO" translatesAutoresizingMaskIntoConstraints="NO" id="Hgv-cV-f8g">
+                                        <rect key="frame" x="100" y="20" width="233" height="29"/>
+                                        <fontDescription key="fontDescription" type="boldSystem" pointSize="24"/>
+                                        <color key="textColor" systemColor="labelColor"/>
+                                        <nil key="highlightedColor"/>
+                                    </label>
+                                    <label opaque="NO" userInteractionEnabled="NO" contentMode="left" horizontalHuggingPriority="251" verticalHuggingPriority="251" text="Organize your content in collections" textAlignment="natural" lineBreakMode="tailTruncation" baselineAdjustment="alignBaselines" adjustsFontSizeToFit="NO" translatesAutoresizingMaskIntoConstraints="NO" id="2zh-MJ-4wP">
+                                        <rect key="frame" x="100" y="57" width="233" height="18"/>
+                                        <fontDescription key="fontDescription" type="system" pointSize="15"/>
+                                        <color key="textColor" systemColor="secondaryLabelColor"/>
+                                        <nil key="highlightedColor"/>
+                                    </label>
+                                </subviews>
+                                <color key="backgroundColor" systemColor="systemBackgroundColor"/>
+                                <constraints>
+                                    <constraint firstItem="Hgv-cV-f8g" firstAttribute="top" secondItem="GKw-Ua-GJM" secondAttribute="top" constant="20" id="0OU-Yx-HWa"/>
+                                    <constraint firstItem="q7K-fP-dU6" firstAttribute="leading" secondItem="GKw-Ua-GJM" secondAttribute="leading" constant="20" id="3gG-LE-kCH"/>
+                                    <constraint firstItem="2zh-MJ-4wP" firstAttribute="leading" secondItem="q7K-fP-dU6" secondAttribute="trailing" constant="20" id="42p-dN-IaN"/>
+                                    <constraint firstAttribute="trailing" secondItem="Hgv-cV-f8g" secondAttribute="trailing" constant="20" id="5sC-BW-3nR"/>
+                                    <constraint firstItem="Hgv-cV-f8g" firstAttribute="leading" secondItem="q7K-fP-dU6" secondAttribute="trailing" constant="20" id="IjQ-LD-VWe"/>
+                                    <constraint firstAttribute="height" constant="120" id="OBJ-aL-xn5"/>
+                                    <constraint firstItem="q7K-fP-dU6" firstAttribute="top" secondItem="GKw-Ua-GJM" secondAttribute="top" constant="20" id="QaI-aG-t7u"/>
+                                    <constraint firstAttribute="trailing" secondItem="2zh-MJ-4wP" secondAttribute="trailing" constant="20" id="e4P-Bs-cG9"/>
+                                    <constraint firstItem="2zh-MJ-4wP" firstAttribute="top" secondItem="Hgv-cV-f8g" secondAttribute="bottom" constant="8" id="hsV-0K-WsC"/>
+                                </constraints>
+                            </view>
+                        </subviews>
+                        <color key="backgroundColor" systemColor="systemBackgroundColor"/>
+                        <constraints>
+                            <constraint firstItem="GKw-Ua-GJM" firstAttribute="leading" secondItem="1gy-aL-Qh9" secondAttribute="leading" constant="20" id="Q0U-n9-nxN"/>
+                            <constraint firstItem="1gy-aL-Qh9" firstAttribute="trailing" secondItem="GKw-Ua-GJM" secondAttribute="trailing" constant="20" id="clJ-cD-oTm"/>
+                            <constraint firstItem="GKw-Ua-GJM" firstAttribute="top" secondItem="1gy-aL-Qh9" secondAttribute="top" constant="20" id="n7p-J0-LWt"/>
+                        </constraints>
+                        <viewLayoutGuide key="safeArea" id="1gy-aL-Qh9"/>
+                    </view>
+                </viewController>
+                <placeholder placeholderIdentifier="IBFirstResponder" id="CEy-Cv-SGf" userLabel="First Responder" customClass="UIResponder" sceneMemberID="firstResponder"/>
+            </objects>
+            <point key="canvasLocation" x="139" y="154"/>
+        </scene>
+    </scenes>
+    <resources>
+        <image name="stakkit-logo" width="512" height="512"/>
+        <systemColor name="labelColor">
+            <color red="0.0" green="0.0" blue="0.0" alpha="1" colorSpace="custom" customColorSpace="sRGB"/>
+        </systemColor>
+        <systemColor name="secondaryLabelColor">
+            <color red="0.23529411764705882" green="0.23529411764705882" blue="0.2627450980392157" alpha="0.59999999999999998" colorSpace="custom" customColorSpace="sRGB"/>
+        </systemColor>
+        <systemColor name="systemBackgroundColor">
+            <color red="1" green="1" blue="1" alpha="1" colorSpace="custom" customColorSpace="sRGB"/>
+        </systemColor>
+    </resources>
+</document>

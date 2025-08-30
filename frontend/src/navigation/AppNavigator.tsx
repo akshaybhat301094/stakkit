@@ -6,6 +6,7 @@ import { setSession, setLoading } from '../store/slices/authSlice';
 import { supabase } from '../services/supabase';
 import { Linking, Platform } from 'react-native';
 import ErrorBoundary from '../components/ErrorBoundary';
+import DeepLinkService from '../services/deepLinkService';
 
 // Import screens
 import AuthNavigator from './AuthNavigator';
@@ -277,7 +278,14 @@ const AppNavigator: React.FC = () => {
   }
 
   return (
-    <NavigationContainer key={navigationKey}>
+    <NavigationContainer 
+      key={navigationKey}
+      ref={(ref) => {
+        if (ref) {
+          DeepLinkService.setNavigationRef(ref);
+        }
+      }}
+    >
       <Stack.Navigator screenOptions={{ headerShown: false }}>
         {isAuthenticated ? (
           <Stack.Screen 

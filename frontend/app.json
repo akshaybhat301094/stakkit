@@ -33,7 +33,13 @@
       "android",
       "web"
     ],
+    "deepLinking": {
+      "enabled": true,
+      "scheme": "stakkit"
+    },
     "plugins": [
+
+      "expo-dev-client",
       "expo-web-browser",
       "expo-font"
     ],

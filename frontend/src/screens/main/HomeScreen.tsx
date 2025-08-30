@@ -19,6 +19,7 @@ import { Link, LinkWithCollections } from '../../types/database';
 import ModernLinkCard from '../../components/ModernLinkCard';
 import { LinksLoadingSkeleton } from '../../components/LoadingCard';
 import { AddToCollectionModal } from '../../components/AddToCollectionModal';
+import ShareTestButton from '../../components/ShareTestButton';
 import { LinksService } from '../../services/linksService';
 import { useAppSelector } from '../../store/hooks';
 import { 
@@ -357,6 +358,11 @@ const HomeScreen: React.FC = () => {
               {/* Quick Stats */}
               {renderQuickStats()}
               
+              {/* Test Share Feature Button (Development) */}
+              <View style={styles.testButtonContainer}>
+                <ShareTestButton />
+              </View>
+              
               {/* Links Grid */}
               <View style={styles.gridContainer}>
                 {renderLinksGrid()}
@@ -439,6 +445,10 @@ const styles = StyleSheet.create({
   },
   statLabel: {
     ...Typography.labelSmall,
+  },
+  testButtonContainer: {
+    paddingHorizontal: Spacing.lg,
+    paddingVertical: Spacing.md,
   },
   gridContainer: {
     paddingHorizontal: Spacing.lg, // Changed from Spacing.md to match CollectionDetailScreen
